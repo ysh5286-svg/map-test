@@ -438,26 +438,40 @@
                 .catch(err => console.log('서비스 워커 실패', err));
         }
 
-        // 🔥 [앱 설치 버튼 로직]
+        // 🔥 [앱 설치 버튼 로직 - 아이폰/안드로이드 통합]
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block'; // 설치 가능하면 버튼 보이기
-        });
+        // 1. 아이폰(iOS)인지 확인
+        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
 
-        installBtn.addEventListener('click', (e) => {
-            if(!deferredPrompt) return;
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    installBtn.style.display = 'none';
-                }
-                deferredPrompt = null;
+        if (isIos) {
+            // 🍎 아이폰이면: 버튼 무조건 보여주고 -> 누르면 안내 메시지
+            installBtn.style.display = 'block';
+            installBtn.addEventListener('click', () => {
+                alert("📲 아이폰 설치 방법\n\n1. 사파리 하단 '공유' 버튼(네모 화살표) 클릭\n2. 메뉴를 내려서 '홈 화면에 추가' 선택\n3. 바탕화면에 달구 아이콘 생성!");
             });
-        });
+        } else {
+            // 🤖 안드로이드/PC면: 설치 가능한 상황일 때만 버튼 보여주기
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installBtn.style.display = 'block';
+            });
+
+            installBtn.addEventListener('click', (e) => {
+                // 아이폰이 아닐 때만 실행
+                if(!isIos && deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            installBtn.style.display = 'none';
+                        }
+                        deferredPrompt = null;
+                    });
+                }
+            });
+        }
     </script>
 </body>
 </html>
