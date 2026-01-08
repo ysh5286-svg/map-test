@@ -50,16 +50,18 @@
     <div id="faqPanel" class="faq-panel">
         <div class="faq-header"><h3>자주 묻는 질문</h3><button class="faq-close" onclick="toggleFaq()">✕</button></div>
         <div class="faq-body">
-            <div class="faq-item"><div class="faq-q">Q. 다즐피플 보물지도는 무엇인가요?</div><div class="faq-a">대구 찐맛집 정보를 한눈에 볼 수 있는 서비스입니다.</div></div>
-            <div class="faq-item"><div class="faq-q">Q. 어떤 기준으로 선정되나요?</div><div class="faq-a">'대구 찐맛집 평가단'이 직접 검증하고 엄선한 로컬 찐맛집 & 핫플만 모았습니다.</div></div>
-            <div class="faq-item"><div class="faq-q">Q. 우리 가게도 등록하고 싶어요!</div><div class="faq-a">우측 하단 [보물지도 등록요청] 버튼을 눌러 신청해주세요.</div></div>
-            
             <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
             <div style="display:flex; flex-direction:column; gap:10px;">
                 <a href="https://open.kakao.com/o/gaV5kk8h" target="_blank" class="panel-btn" style="background:#fee500; color:#3c1e1e;">💬 대구핫플여기 찐맛집 정보방</a>
                 <button onclick="openGameModal()" class="panel-btn" style="background:#2c3e50;">🎮 오늘 뭐 먹지?</button>
                 <a href="https://litt.ly/dazzlepeople" target="_blank" class="panel-btn" style="background:#e1306c;">📱 SNS 구경가기</a>
             </div>
+        </div>
+
+        <div style="padding: 0 20px 10px 20px;">
+            <button id="installBtn" class="panel-btn" style="display:none; background:#3498db; color:white; font-size:15px; box-shadow:0 4px 6px rgba(52, 152, 219, 0.3);">
+                ⬇️ 대구보물지도 앱 설치하기
+            </button>
         </div>
 
         <div class="faq-footer">
@@ -161,10 +163,9 @@
 
     <div class="bottom-bar">
         <div class="bottom-left" style="display:flex; align-items:center;">
-            <button class="bar-btn btn-usage" onclick="toggleFaq()">📖 사용법</button>
-            <button id="installBtn" class="bar-btn" style="display:none; background:#3498db; color:white; margin-left:5px;">⬇️ 앱 설치</button>
-            <a href="https://www.dazzlepeople.com" target="_blank" class="footer-copyright" style="margin-left:10px;">© Dazzle People</a>
-        </div>
+    <button class="bar-btn btn-usage" onclick="toggleFaq()">📖 사용법</button>
+    <a href="https://www.dazzlepeople.com" target="_blank" class="footer-copyright" style="margin-left:10px;">© Dazzle People</a>
+</div>
         <div class="bottom-center">
             <button class="btn-location-mode" onclick="moveToCurrentLocation()">
                 <div class="loc-icon-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
