@@ -1,6 +1,6 @@
 {
-  "name": "대구핫플여기 보물지도",
-  "short_name": "대구핫플",
+  "name": "대구보물지도",
+  "short_name": "대구핫플여기",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",

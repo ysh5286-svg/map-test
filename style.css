@@ -68,6 +68,19 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Noto Sans KR', s
 .panel-btn { display: block; width: 100%; padding: 10px; text-align: center; background: #03c75a; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; margin-top: 5px; }
 
 /* 5. 하단바 (푸터) */
+.footer-copyright { 
+    font-size: 11px; 
+    color: #aaa; 
+    margin-left: 8px; 
+    text-decoration: none; 
+    font-weight: bold;
+    
+    /* 아이폰에서 글자 깨짐 방지하는 핵심 규칙 */
+    white-space: nowrap; 
+    display: inline-block; 
+    line-height: 1; 
+}
+
 .bottom-bar {
     position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
     background: white; border-top: 1px solid #eee; z-index: 400;
