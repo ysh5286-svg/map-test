@@ -7,6 +7,8 @@ const urlsToCache = [
   './style.css',
   './common.js',
   './manifest.json',
+  './icon-192.png',  // 🔥 추가됨
+  './icon-512.png',  // 🔥 추가됨
   'https://code.jquery.com/jquery-3.7.1.min.js',
   'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap'
 ];

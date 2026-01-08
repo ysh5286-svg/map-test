@@ -7,17 +7,12 @@
   "theme_color": "#c0392b",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/google/material-design-icons/master/png/maps/local_dining/materialicons/48dp/2x/baseline_local_dining_black_48dp.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "https://raw.githubusercontent.com/google/material-design-icons/master/png/maps/local_dining/materialicons/48dp/2x/baseline_local_dining_black_48dp.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://raw.githubusercontent.com/google/material-design-icons/master/png/maps/local_dining/materialicons/48dp/2x/baseline_local_dining_black_48dp.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
