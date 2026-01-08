@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>대구핫플여기 보물지도</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#c0392b">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/google/material-design-icons/master/png/maps/local_dining/materialicons/48dp/2x/baseline_local_dining_black_48dp.png">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>">
+    <meta property="og:title" content="🗺️ 대구핫플여기 보물지도">
+    <meta property="og:description" content="대구 찐맛집과 핫플을 한눈에!&#10;실패 없는 맛집 지도">
+    <meta property="og:image" content="https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20260106_269%2F1767704133801UGRCw_JPEG%2FGemini_Generated_Image_b2zgovb2zgovb2zg.jpg">
+    <meta property="og:url" content="https://www.heredaegu.com">
+
+    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=krsv42ftzf&submodules=geocoder"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>💎 보물지도를 펼치는 중...</p>
+    </div>
+
+    <div class="search-container">
+        <div class="search-box-wrapper">
+            <div class="search-filters">
+                <select id="filterRegion" class="search-select" onchange="applyAllFilters()">
+                    <option value="">📍 지역 전체</option><option value="수성구">수성구</option><option value="중구">중구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="경산">경산</option><option value="청도">청도</option><option value="대구 밖">대구 밖</option>
+                </select>
+                <select id="filterCategory" class="search-select" onchange="applyAllFilters()">
+                    <option value="">🍜 업종 전체</option><option value="한식">한식</option><option value="중식">중식</option><option value="일식">일식</option><option value="양식">양식</option><option value="분식">분식</option><option value="고기/구이">고기/구이</option><option value="회/해산물">회/해산물</option><option value="아시안">아시안</option><option value="술집">술집</option><option value="카페/디저트">카페/디저트</option><option value="빵집">빵집</option><option value="패스트푸드">패스트푸드</option><option value="포장/배달">포장/배달</option>
+                </select>
+                <select id="filterPurpose" class="search-select" onchange="applyAllFilters()">
+                    <option value="">✨ 분위기 전체</option><option value="노포">노포</option><option value="데이트">데이트</option><option value="단체회식">단체회식</option><option value="혼밥/혼술">혼밥/혼술</option><option value="무한리필">무한리필</option><option value="이색맛집">이색맛집</option><option value="뷰맛집">뷰맛집</option><option value="상견례">상견례</option><option value="야간영업">야간영업</option>
+                </select>
+            </div>
+            <div class="search-input-row">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="keyword" class="search-input" placeholder="예: 동성로 두바이 (띄어쓰기로 교차검색)" onkeyup="applyAllFilters()">
+            </div>
+        </div>
+    </div>
+
+    <div id="faqPanel" class="faq-panel">
+        <div class="faq-header"><h3>자주 묻는 질문</h3><button class="faq-close" onclick="toggleFaq()">✕</button></div>
+        <div class="faq-body">
+            <div class="faq-item"><div class="faq-q">Q. 다즐피플 보물지도는 무엇인가요?</div><div class="faq-a">대구 찐맛집 정보를 한눈에 볼 수 있는 서비스입니다.</div></div>
+            <div class="faq-item"><div class="faq-q">Q. 어떤 기준으로 선정되나요?</div><div class="faq-a">'대구 찐맛집 평가단'이 직접 검증하고 엄선한 로컬 찐맛집 & 핫플만 모았습니다.</div></div>
+            <div class="faq-item"><div class="faq-q">Q. 우리 가게도 등록하고 싶어요!</div><div class="faq-a">우측 하단 [보물지도 등록요청] 버튼을 눌러 신청해주세요.</div></div>
+            
+            <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <a href="https://open.kakao.com/o/gaV5kk8h" target="_blank" class="panel-btn" style="background:#fee500; color:#3c1e1e;">💬 대구핫플여기 찐맛집 정보방</a>
+                <button onclick="openGameModal()" class="panel-btn" style="background:#2c3e50;">🎮 오늘 뭐 먹지?</button>
+                <a href="https://litt.ly/dazzlepeople" target="_blank" class="panel-btn" style="background:#e1306c;">📱 SNS 구경가기</a>
+            </div>
+        </div>
+
+        <div class="faq-footer">
+            <div class="company-box">
+                <strong>다즐피플 (대표: 윤성호)</strong><br>
+                사업자번호: 535-25-01793<br>
+                주소: 대구광역시 동구 송라로16길 42
+            </div>
+        </div>
+    </div>
+
+    <div id="selectModal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="modal-close-x" onclick="closeSelectModal()">×</button>
+            <h3 class="modal-title" style="font-size:16px; margin-bottom:15px;">👇 매장을 선택해주세요</h3>
+            <div id="selectList" class="shop-select-list"></div>
+        </div>
+    </div>
+
+    <div id="gameModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:400px; padding:0;">
+            <button class="modal-close-x" style="z-index:10; top:10px; right:10px;" onclick="closeGameModal()">×</button>
+            
+            <div class="game-container" style="padding:25px;">
+                <div id="gameMain">
+                    <div class="game-title">🍽️ 오늘 뭐 먹지?</div>
+                    <div class="game-selection">
+                        <div class="game-card" onclick="startWorldCupGame()">
+                            <span class="game-icon">🏆</span>
+                            <span class="game-name">음식 월드컵</span>
+                            <span class="game-desc">토너먼트로<br>신중하게!</span>
+                        </div>
+                        <div class="game-card" onclick="startRouletteGame()">
+                            <span class="game-icon">🎡</span>
+                            <span class="game-name">랜덤 돌림판</span>
+                            <span class="game-desc">운명에<br>맡겨요!</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="wcGame" class="wc-container">
+                    <div class="wc-round-badge" id="wcRoundBadge">16강</div>
+                    <div class="wc-vs-box">
+                        <div class="wc-card" onclick="wcChoose(0)"><div id="wcImgLeft" class="wc-img"></div><div id="wcNameLeft" class="wc-name"></div></div>
+                        <div style="font-weight:bold; color:#e74c3c; font-style:italic;">VS</div>
+                        <div class="wc-card" onclick="wcChoose(1)"><div id="wcImgRight" class="wc-img"></div><div id="wcNameRight" class="wc-name"></div></div>
+                    </div>
+                    <button onclick="resetGame()" style="font-size:12px; color:#999; border:none; background:none; text-decoration:underline; cursor:pointer;">처음으로</button>
+                </div>
+
+                <div id="wcResult" class="hidden" style="text-align:center;">
+                    <div style="font-size:12px; font-weight:bold; color:#888; margin-bottom:10px;">👑 최후의 승자 👑</div>
+                    <div id="wcWinnerImg" style="font-size:80px; margin-bottom:10px;"></div>
+                    <div id="wcWinnerName" style="font-size:24px; font-weight:bold; color:#3498db; margin-bottom:20px;"></div>
+                    <button onclick="resetGame()" class="spin-btn" style="background:#333;">처음으로 돌아가기</button>
+                </div>
+
+                <div id="rouletteGame" class="roulette-container">
+                    <div class="roulette-mode-btns">
+                        <button onclick="setRouletteMode('lunch')" id="btn-lunch" class="roulette-btn active">점심</button>
+                        <button onclick="setRouletteMode('dinner')" id="btn-dinner" class="roulette-btn">저녁</button>
+                        <button onclick="setRouletteMode('weekend')" id="btn-weekend" class="roulette-btn">주말</button>
+                        <button onclick="setRouletteMode('custom')" id="btn-custom" class="roulette-btn" style="color:#3498db; border-color:#3498db;">내맘대로</button>
+                    </div>
+                    <div id="customInputArea" class="custom-input-box">
+                        <div class="custom-input-row">
+                            <input type="text" id="customItemInput" class="custom-input" placeholder="메뉴 입력" onkeypress="if(event.key==='Enter') addCustomItem()">
+                            <button onclick="addCustomItem()" class="custom-add-btn">추가</button>
+                        </div>
+                        <div id="customItemList" class="custom-list"></div>
+                    </div>
+                    <div class="roulette-canvas-box"><canvas id="rouletteCanvas" width="560" height="560" class="roulette-canvas"></canvas><div class="roulette-arrow">▼</div></div>
+                    <button id="spinBtn" class="spin-btn" onclick="spinRoulette()">돌려 돌려! START</button>
+                    <button onclick="resetGame()" style="margin-top:10px; font-size:12px; color:#999; border:none; background:none; text-decoration:underline; cursor:pointer;">처음으로</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="infoPanel" class="info-panel">
+        <div class="panel-header" id="panelHeader"><button class="panel-close" onclick="closePanel()">✕</button></div>
+        <div class="panel-body">
+            <div><h2 class="panel-title" id="panelTitle">가게 이름</h2><div class="panel-meta" id="panelMeta"></div></div>
+            <div class="rating-box">
+                <div class="rating-left"><div class="total-score" id="panelTotal">0.0</div><div class="total-label">총점</div></div>
+                <div class="rating-grid">
+                    <div class="detail-score"><span>맛</span> <div class="progress-bg"><div id="barTaste" class="progress-bar"></div></div></div>
+                    <div class="detail-score"><span>가성비</span> <div class="progress-bg"><div id="barValue" class="progress-bar"></div></div></div>
+                    <div class="detail-score"><span>분위기</span> <div class="progress-bg"><div id="barMood" class="progress-bar"></div></div></div>
+                    <div class="detail-score"><span>친절도</span> <div class="progress-bg"><div id="barKind" class="progress-bar"></div></div></div>
+                </div>
+            </div>
+            <div class="info-row"><span class="info-label">메뉴</span> <span class="info-text" id="panelMenu"></span></div>
+            <div class="info-row"><span class="info-label">주소</span> <span class="info-text" id="panelAddr"></span></div>
+            <div class="info-row"><span class="info-label">설명</span> <span class="info-text" id="panelDesc"></span></div>
+            <a href="#" id="panelLink" target="_blank" class="panel-btn">네이버 플레이스 보기</a>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="bottom-left" style="display:flex; align-items:center;">
+            <button class="bar-btn btn-usage" onclick="toggleFaq()">📖 사용법</button>
+            <button id="installBtn" class="bar-btn" style="display:none; background:#3498db; color:white; margin-left:5px;">⬇️ 앱 설치</button>
+            <a href="https://www.dazzlepeople.com" target="_blank" class="footer-copyright" style="margin-left:10px;">© Dazzle People</a>
+        </div>
+        <div class="bottom-center">
+            <button class="btn-location-mode" onclick="moveToCurrentLocation()">
+                <div class="loc-icon-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
+                <span class="loc-text">내 주변</span>
+            </button>
+        </div>
+        <div class="bottom-right">
+            <button class="bar-btn" style="background:#e67e22; color:white; border:none;" onclick="window.open('http://pf.kakao.com/_dmaAG')">🌟 보물지도 등록요청</button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script>
+        // ... (기존 게임 관련 스크립트 그대로 유지) ...
+        function toggleFaq() { document.getElementById('faqPanel').classList.toggle('show'); }
+        function closePanel() { document.getElementById('infoPanel').classList.remove('show'); }
+        function closeSelectModal() { document.getElementById('selectModal').classList.remove('show'); }
+        function openGameModal() { resetGame(); document.getElementById('gameModal').classList.add('show'); document.getElementById('faqPanel').classList.remove('show'); }
+        function closeGameModal() { document.getElementById('gameModal').classList.remove('show'); }
+        
+        const foodData = {
+            lunch: [{name:"김치찌개",img:"🥘"},{name:"돈까스",img:"🍛"},{name:"제육볶음",img:"🥩"},{name:"순대국밥",img:"🍚"},{name:"햄버거",img:"🍔"},{name:"짜장면",img:"🥢"},{name:"짬뽕",img:"🍜"},{name:"칼국수",img:"🍲"},{name:"김밥/라면",img:"🍙"},{name:"비빔밥",img:"🥗"},{name:"부대찌개",img:"🥘"},{name:"가정식백반",img:"🍱"},{name:"쌀국수",img:"🍜"},{name:"샌드위치",img:"🥪"},{name:"편의점",img:"🏪"},{name:"샐러드",img:"🥗"}],
+            dinner: [{name:"삼겹살",img:"🥓"},{name:"치킨",img:"🍗"},{name:"곱창/대창",img:"🔥"},{name:"회/사시미",img:"🐟"},{name:"족발/보쌈",img:"🍖"},{name:"마라탕",img:"🌶️"},{name:"양꼬치",img:"🍡"},{name:"피자",img:"🍕"},{name:"닭발",img:"🔥"},{name:"찜닭",img:"🥘"},{name:"갈비",img:"🥩"},{name:"감자탕",img:"🥘"},{name:"이자카야",img:"🍶"},{name:"파스타",img:"🍝"},{name:"스테이크",img:"🥩"},{name:"오돌뼈",img:"🍖"}],
+            weekend: [{name:"브런치",img:"🥞"},{name:"샤브샤브",img:"🍲"},{name:"배달치킨",img:"🍗"},{name:"피자파티",img:"🍕"},{name:"짜파게티",img:"🍜"},{name:"뷔페",img:"🍽️"},{name:"소고기",img:"🥩"},{name:"해물찜",img:"🐙"},{name:"집밥",img:"🍚"},{name:"편의점털기",img:"🍫"},{name:"타코/이색",img:"🌮"},{name:"냉장고파먹기",img:"🧊"},{name:"마라탕",img:"🌶️"},{name:"족발/보쌈",img:"🍖"},{name:"중국집",img:"🥢"},{name:"카페/디저트",img:"🍰"}]
+        };
+        let currentFoods=[],wcCurrentRound=[],wcNextRound=[],wcIndex=0,customFoods=["짜장면","짬뽕","탕수육"],rCanvas,rCtx,rCurrentRotation=0,isSpinning=false;
+        const colors=["#FF9AA2","#FFB7B2","#FFDAC1","#E2F0CB","#B5EAD7","#C7CEEA","#93C5FD","#A78BFA","#FCA5A5","#FDBA74","#FDE047","#86EFAC"];
+        function resetGame(){ document.getElementById('gameMain').classList.remove('hidden'); document.getElementById('wcGame').style.display='none'; document.getElementById('wcResult').classList.add('hidden'); document.getElementById('rouletteGame').style.display='none'; }
+        function startWorldCupGame(){ document.getElementById('gameMain').classList.add('hidden'); document.getElementById('wcGame').style.display='flex'; const all=[...foodData.lunch,...foodData.dinner,...foodData.weekend]; const uniq=all.filter((v,i,a)=>a.findIndex(t=>(t.name===v.name))===i); uniq.sort(()=>Math.random()-0.5); wcCurrentRound=uniq.slice(0,16); wcNextRound=[]; wcIndex=0; updateWcMatch(); }
+        function updateWcMatch(){ if(wcIndex>=wcCurrentRound.length/2){ wcCurrentRound=[...wcNextRound]; wcNextRound=[]; wcIndex=0; wcCurrentRound.sort(()=>Math.random()-0.5); } if(wcCurrentRound.length===1){ showWcWinner(wcCurrentRound[0]); return; } document.getElementById('wcRoundBadge').innerText=wcCurrentRound.length===2?"결승":wcCurrentRound.length+"강"; const l=wcCurrentRound[wcIndex*2],r=wcCurrentRound[wcIndex*2+1]; document.getElementById('wcImgLeft').innerText=l.img; document.getElementById('wcNameLeft').innerText=l.name; document.getElementById('wcImgRight').innerText=r.img; document.getElementById('wcNameRight').innerText=r.name; }
+        window.wcChoose=function(s){ wcNextRound.push(wcCurrentRound[wcIndex*2+s]); wcIndex++; updateWcMatch(); }
+        function showWcWinner(w){ document.getElementById('wcGame').style.display='none'; document.getElementById('wcResult').classList.remove('hidden'); document.getElementById('wcWinnerImg').innerText=w.img; document.getElementById('wcWinnerName').innerText=w.name; fireConfetti(); }
+        window.startRouletteGame=function(){ document.getElementById('gameMain').classList.add('hidden'); document.getElementById('rouletteGame').style.display='flex'; initRoulette(); setRouletteMode('lunch'); }
+        function initRoulette(){ rCanvas=document.getElementById('rouletteCanvas'); rCtx=rCanvas.getContext('2d'); }
+        window.setRouletteMode=function(m){ if(isSpinning)return; document.querySelectorAll('.roulette-btn').forEach(b=>b.classList.remove('active')); document.getElementById(`btn-${m}`).classList.add('active'); if(m==='custom'){ currentFoods=[...customFoods]; document.getElementById('customInputArea').style.display='block'; renderCustomItems(); }else{ currentFoods=foodData[m].map(i=>i.name); document.getElementById('customInputArea').style.display='none'; } drawRoulette(); }
+        window.addCustomItem=function(){ const v=document.getElementById('customItemInput').value.trim(); if(v){ customFoods.push(v); currentFoods=[...customFoods]; document.getElementById('customItemInput').value=''; renderCustomItems(); drawRoulette(); } }
+        window.removeCustomItem=function(i){ customFoods.splice(i,1); currentFoods=[...customFoods]; renderCustomItems(); drawRoulette(); }
+        function renderCustomItems(){ document.getElementById('customItemList').innerHTML=customFoods.map((t,i)=>`<span class="custom-tag">${t} <span class="custom-tag-del" onclick="removeCustomItem(${i})">×</span></span>`).join(''); }
+        function drawRoulette(){ if(!rCanvas)return; const n=currentFoods.length; if(n===0){ rCtx.clearRect(0,0,rCanvas.width,rCanvas.height); return; } const arc=(2*Math.PI)/n,dpr=window.devicePixelRatio||1,rect=rCanvas.getBoundingClientRect(); rCanvas.width=rect.width*dpr; rCanvas.height=rect.height*dpr; rCtx.scale(dpr,dpr); const r=rect.width/2; rCtx.clearRect(0,0,rect.width,rect.height); for(let i=0;i<n;i++){ const a=i*arc-Math.PI/2; rCtx.beginPath(); rCtx.moveTo(r,r); rCtx.arc(r,r,r,a,a+arc); rCtx.fillStyle=colors[i%colors.length]; rCtx.fill(); rCtx.stroke(); rCtx.save(); rCtx.translate(r,r); rCtx.rotate(a+arc/2); rCtx.textAlign="right"; rCtx.fillStyle="#333"; const fs=Math.max(12,Math.min(24,200/n)); rCtx.font=`bold ${fs}px 'Noto Sans KR'`; rCtx.fillText(currentFoods[i],r-20,5); rCtx.restore(); } }
+        window.spinRoulette=function(){ if(isSpinning)return; if(currentFoods.length<2){ alert("메뉴 2개 이상 필요!"); return; } isSpinning=true; document.getElementById('spinBtn').innerText="...DoRoRo..."; const r=Math.floor(Math.random()*360); rCurrentRotation+=(360*5+r); rCanvas.style.transition="transform 4s cubic-bezier(0.25,0.1,0.25,1)"; rCanvas.style.transform=`rotate(${rCurrentRotation}deg)`; setTimeout(()=>{ isSpinning=false; document.getElementById('spinBtn').innerText="돌려 돌려! START"; fireConfetti(); },4000); }
+        function fireConfetti(){ const c=['#f00','#0f0','#00f','#ff0','#0ff']; for(let i=0;i<50;i++){ const d=document.createElement('div'); d.className='confetti'; d.style.left=Math.random()*100+'vw'; d.style.top='-10px'; d.style.backgroundColor=c[Math.floor(Math.random()*c.length)]; d.style.animationDuration=(Math.random()*2+2)+'s'; document.body.appendChild(d); setTimeout(()=>d.remove(),4000); } }
+    </script>
+
+    <script type="module">
+        if(db) {
+    getDocs(collection(db, "shops")).then((snapshot) => {
+        allShops = [];
+        snapshot.forEach((doc) => allShops.push({ id: doc.id, ...doc.data() }));
+        
+        updateVisibleMarkers();
+
+        // 🔥 [추가] 데이터 로딩 끝나면 로딩화면 끄기
+        document.getElementById('loadingOverlay').classList.add('fade-out');
+
+    }).catch(e => {
+        console.error("Error:", e);
+        // 에러 나도 로딩화면은 꺼주기
+        document.getElementById('loadingOverlay').classList.add('fade-out');
+    });
+}
+        import { db, initMap, createMarker } from "./common.js";
+        // 🔥 getDocs를 사용하여 1회만 호출 (비용 절약)
+        import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        var map = initMap();
+        let allShops = [];
+        let markerList = [];
+
+        const LANDMARKS = {
+            "팔공산": { lat: 35.9899, lng: 128.6961 }, "갓바위": { lat: 35.9758, lng: 128.7694 },
+            "반월당": { lat: 35.8644, lng: 128.5933 }, "동성로": { lat: 35.8710, lng: 128.5960 },
+            "수성못": { lat: 35.8280, lng: 128.6170 }, "이월드": { lat: 35.8530, lng: 128.5630 },
+            "83타워": { lat: 35.8530, lng: 128.5630 }, "두류공원": { lat: 35.8475, lng: 128.5583 },
+            "동대구역": { lat: 35.8770, lng: 128.6285 }, "대구역": { lat: 35.8764, lng: 128.5960 },
+            "서문시장": { lat: 35.8690, lng: 128.5815 }, "김광석거리": { lat: 35.8603, lng: 128.6080 },
+            "앞산": { lat: 35.8335, lng: 128.5810 }, "강정보": { lat: 35.8430, lng: 128.4690 },
+            "디아크": { lat: 35.8430, lng: 128.4690 }, "삼성라이온즈파크": { lat: 35.8411, lng: 128.6817 },
+            "라팍": { lat: 35.8411, lng: 128.6817 }, "대구공항": { lat: 35.8970, lng: 128.6440 },
+            "경북대": { lat: 35.8906, lng: 128.6121 }, "계명대": { lat: 35.8535, lng: 128.4860 },
+            "영남대": { lat: 35.8306, lng: 128.7562 }
+        };
+
+        naver.maps.Event.addListener(map, "click", function() {
+            closePanel(); document.getElementById('faqPanel').classList.remove('show');
+        });
+
+        // 🔥 [핵심 1] 처음에 데이터 딱 1번만 가져오기
+        if(db) {
+            getDocs(collection(db, "shops")).then((snapshot) => {
+                allShops = [];
+                snapshot.forEach((doc) => allShops.push({ id: doc.id, ...doc.data() }));
+                
+                // 가져오자마자 한번 그리기 (보이는 것만)
+                updateVisibleMarkers();
+            }).catch(e => console.error("Error:", e));
+        }
+
+        // 🔥 [핵심 2] 지도가 멈출 때마다(idle) 보이는 마커만 계산해서 다시 그리기
+        naver.maps.Event.addListener(map, 'idle', updateVisibleMarkers);
+
+        // 🔥 [핵심 3] 화면에 보이는 가게만 골라내는 함수 (비용 0원)
+        function updateVisibleMarkers() {
+            const bounds = map.getBounds(); // 현재 화면 좌표 범위
+            
+            // 필터링 적용된 가게들 중에서 + 화면 안에 있는 것만
+            // (1차로 검색 필터, 2차로 좌표 필터)
+            const filtered = filterShops(allShops);
+            const visibleShops = filtered.filter(shop => {
+                if(!shop.lat || !shop.lng) return false;
+                const pos = new naver.maps.LatLng(shop.lat, shop.lng);
+                return bounds.hasLatLng(pos);
+            });
+
+            renderMarkers(visibleShops);
+        }
+
+        window.moveToCurrentLocation = function() {
+            if (!navigator.geolocation) { alert("위치 정보를 사용할 수 없습니다."); return; }
+            navigator.geolocation.getCurrentPosition((position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const loc = new naver.maps.LatLng(lat, lng);
+                map.setCenter(loc);
+                map.setZoom(16);
+                if (window.myLocationMarker) window.myLocationMarker.setMap(null);
+                window.myLocationMarker = new naver.maps.Marker({
+                    position: loc, map: map,
+                    icon: { content: '<div style="width:16px;height:16px;background:#3498db;border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>', anchor: new naver.maps.Point(8, 8) }
+                });
+            }, () => { alert("위치 정보를 가져올 수 없습니다. (GPS를 켜주세요)"); });
+        }
+
+        $('#keyword').on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const query = $(this).val().replace(/\s+/g, '');
+                if(!query) return;
+                for (const key in LANDMARKS) {
+                    if (query.includes(key)) {
+                        const coords = LANDMARKS[key];
+                        map.setCenter(new naver.maps.LatLng(coords.lat, coords.lng));
+                        map.setZoom(15);
+                        return;
+                    }
+                }
+                searchAddressToCoordinate($(this).val().trim());
+            }
+        });
+
+        function searchAddressToCoordinate(query, isRetry = false) {
+            naver.maps.Service.geocode({ query: query }, function(status, response) {
+                if (status === naver.maps.Service.Status.OK) {
+                    if (response.v2 && response.v2.addresses.length > 0) {
+                        const item = response.v2.addresses[0];
+                        map.setCenter(new naver.maps.Point(item.x, item.y));
+                        map.setZoom(16);
+                    } else if (response.result && response.result.items.length > 0) {
+                        const item = response.result.items[0];
+                        map.setCenter(new naver.maps.Point(item.point.x, item.point.y));
+                        map.setZoom(16);
+                    } else {
+                        if(!isRetry && query.indexOf('대구') === -1) searchAddressToCoordinate("대구 " + query, true);
+                        else alert("주소를 찾을 수 없습니다.");
+                    }
+                } else {
+                    if(!isRetry && query.indexOf('대구') === -1) searchAddressToCoordinate("대구 " + query, true);
+                    else alert("검색 실패");
+                }
+            });
+        }
+
+        function renderMarkers(shops) {
+            markerList.forEach(m => m.setMap(null));
+            markerList = [];
+            
+            const groups = {};
+            shops.forEach(shop => {
+                if(!shop.lat || !shop.lng) return;
+                const key = shop.lat.toFixed(5) + "," + shop.lng.toFixed(5);
+                if(!groups[key]) groups[key] = [];
+                groups[key].push(shop);
+            });
+
+            for(const key in groups) {
+                // 대표 설정: updatedAt이 가장 최신인 것이 0번
+                groups[key].sort((a, b) => {
+                    const dateA = a.updatedAt ? (a.updatedAt.seconds || 0) : 0;
+                    const dateB = b.updatedAt ? (b.updatedAt.seconds || 0) : 0;
+                    return dateB - dateA;
+                });
+
+                const marker = createMarker(map, groups[key], function(clickedList) {
+                    if (clickedList.length === 1) showPanel(clickedList[0]);
+                    else showSelectModal(clickedList);
+                });
+                if(marker) markerList.push(marker);
+            }
+        }
+
+        function showSelectModal(shopList) {
+            const listEl = document.getElementById('selectList');
+            listEl.innerHTML = '';
+            shopList.forEach(shop => {
+                const div = document.createElement('div');
+                div.className = 'shop-select-item';
+                var cat = Array.isArray(shop.category) ? shop.category[0] : shop.category;
+                div.innerHTML = `<span class="shop-select-name">${shop.name}</span><span class="shop-select-cat">${cat || '맛집'}</span>`;
+                div.onclick = () => { closeSelectModal(); showPanel(shop); };
+                listEl.appendChild(div);
+            });
+            document.getElementById('selectModal').classList.add('show');
+        }
+
+        function filterShops(shops) {
+            var region = $('#filterRegion').val();
+            var category = $('#filterCategory').val();
+            var purpose = $('#filterPurpose').val();
+            var keywordInput = $('#keyword').val().toLowerCase().trim();
+            var keywords = keywordInput.split(/\s+/).filter(t => t.length > 0);
+
+            return shops.filter(shop => {
+                var matchRegion = (region === "") || (shop.region === region);
+                var shopCategories = Array.isArray(shop.category) ? shop.category : [shop.category];
+                var matchCategory = (category === "") || shopCategories.includes(category);
+                var shopPurposes = Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose];
+                var matchPurpose = (purpose === "") || shopPurposes.includes(purpose);
+                
+                var searchableText = (
+                    shop.name + " " + (shop.menu || "") + " " + (shop.area || "") + " " + (shop.address || "") + " " + shopCategories.join(" ")
+                ).toLowerCase();
+
+                var matchKeyword = true;
+                if (keywords.length > 0) {
+                    matchKeyword = keywords.every(term => searchableText.includes(term));
+                }
+
+                return matchRegion && matchCategory && matchPurpose && matchKeyword;
+            });
+        }
+
+        // 필터 변경 시에도 화면에 보이는 것만 다시 그리기 위해 updateVisibleMarkers 호출
+        window.applyAllFilters = function() { updateVisibleMarkers(); };
+
+        function showPanel(data) {
+            var img = data.imageUrl || 'https://via.placeholder.com/400x200?text=No+Image';
+            $('#panelHeader').css('background-image', `url(${img})`);
+            $('#panelTitle').text(data.name);
+            var categories = Array.isArray(data.category) ? data.category : [data.category];
+            var purposes = Array.isArray(data.purpose) ? data.purpose : [data.purpose];
+            var tags = [...categories, data.region, ...purposes, data.area].filter(Boolean);
+            $('#panelMeta').html(tags.map(t => `<span class="panel-tag">#${t}</span>`).join(''));
+            $('#panelTotal').text(data.totalScore || '0.0');
+            setTimeout(() => {
+                $('#barTaste').css('width', (data.scoreTaste || 0) * 20 + '%');
+                $('#barValue').css('width', (data.scoreValue || 0) * 20 + '%');
+                $('#barMood').css('width', (data.scoreMood || 0) * 20 + '%');
+                $('#barKind').css('width', (data.scoreKind || 0) * 20 + '%');
+            }, 100);
+            $('#panelMenu').text(data.menu || '-');
+            $('#panelAddr').text(data.address || '-');
+            $('#panelDesc').text(data.desc || '설명 없음');
+            $('#panelLink').attr('href', data.link || '#');
+            document.getElementById('faqPanel').classList.remove('show');
+            $('#infoPanel').addClass('show');
+        }
+
+        // 🔥 [PWA 서비스 워커 등록]
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(() => console.log('서비스 워커 등록 완료'))
+                .catch(err => console.log('서비스 워커 실패', err));
+        }
+
+        // 🔥 [앱 설치 버튼 로직]
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block'; // 설치 가능하면 버튼 보이기
+        });
+
+        installBtn.addEventListener('click', (e) => {
+            if(!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+        });
+    </script>
+</body>
+</html>
