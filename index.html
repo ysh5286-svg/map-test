@@ -162,10 +162,10 @@
     </div>
 
     <div class="bottom-bar">
-        <div class="bottom-left" style="display:flex; align-items:center;">
-    <button class="bar-btn btn-usage" onclick="toggleFaq()">📖 사용법</button>
-    <a href="https://www.dazzlepeople.com" target="_blank" class="footer-copyright" style="margin-left:10px;">© Dazzle People</a>
-</div>
+        <div class="bottom-left">
+            <button class="bar-btn btn-usage" onclick="toggleFaq()">📖 사용법</button>
+            <a href="https://www.dazzlepeople.com" target="_blank" class="footer-copyright" style="margin-left:10px;">© Dazzle People</a>
+        </div>
         <div class="bottom-center">
             <button class="btn-location-mode" onclick="moveToCurrentLocation()">
                 <div class="loc-icon-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
@@ -180,7 +180,7 @@
     <div id="map"></div>
 
     <script>
-        // ... (기존 게임 관련 스크립트 그대로 유지) ...
+        // ... (기존 게임 관련 스크립트) ...
         function toggleFaq() { document.getElementById('faqPanel').classList.toggle('show'); }
         function closePanel() { document.getElementById('infoPanel').classList.remove('show'); }
         function closeSelectModal() { document.getElementById('selectModal').classList.remove('show'); }
@@ -211,24 +211,8 @@
     </script>
 
     <script type="module">
-        if(db) {
-    getDocs(collection(db, "shops")).then((snapshot) => {
-        allShops = [];
-        snapshot.forEach((doc) => allShops.push({ id: doc.id, ...doc.data() }));
-        
-        updateVisibleMarkers();
-
-        // 🔥 [추가] 데이터 로딩 끝나면 로딩화면 끄기
-        document.getElementById('loadingOverlay').classList.add('fade-out');
-
-    }).catch(e => {
-        console.error("Error:", e);
-        // 에러 나도 로딩화면은 꺼주기
-        document.getElementById('loadingOverlay').classList.add('fade-out');
-    });
-}
         import { db, initMap, createMarker } from "./common.js";
-        // 🔥 getDocs를 사용하여 1회만 호출 (비용 절약)
+        // 🔥 getDocs를 상단에서 정확하게 임포트
         import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         var map = initMap();
@@ -253,26 +237,36 @@
             closePanel(); document.getElementById('faqPanel').classList.remove('show');
         });
 
-        // 🔥 [핵심 1] 처음에 데이터 딱 1번만 가져오기
+        // 🔥 [핵심 1] 처음에 데이터 가져오기
         if(db) {
             getDocs(collection(db, "shops")).then((snapshot) => {
                 allShops = [];
                 snapshot.forEach((doc) => allShops.push({ id: doc.id, ...doc.data() }));
                 
-                // 가져오자마자 한번 그리기 (보이는 것만)
+                // 데이터는 왔지만 지도가 준비 안 됐을 수 있으므로 시도
                 updateVisibleMarkers();
-            }).catch(e => console.error("Error:", e));
+                
+                // 로딩 종료
+                document.getElementById('loadingOverlay').classList.add('fade-out');
+            }).catch(e => {
+                console.error("Error:", e);
+                document.getElementById('loadingOverlay').classList.add('fade-out');
+            });
         }
 
-        // 🔥 [핵심 2] 지도가 멈출 때마다(idle) 보이는 마커만 계산해서 다시 그리기
+        // 🔥 [핵심 2] 지도가 멈출 때(idle)마다 마커 갱신
+        // 모바일에서 초기 로딩이 늦어 핀이 안 뜰 때, 이 이벤트가 결국 실행되어 핀을 그려줌
         naver.maps.Event.addListener(map, 'idle', updateVisibleMarkers);
 
-        // 🔥 [핵심 3] 화면에 보이는 가게만 골라내는 함수 (비용 0원)
+        // 🔥 [핵심 3] 화면에 보이는 가게만 골라내는 함수 (안전장치 추가됨)
         function updateVisibleMarkers() {
-            const bounds = map.getBounds(); // 현재 화면 좌표 범위
+            // 🚨 안전장치: 지도가 아직 초기화 중이라 영역(bounds)이 없으면 중단하고 대기
+            const bounds = map.getBounds();
+            if (!bounds) {
+                return; // 지도가 완전히 뜰 때까지(idle 이벤트 발생 전까지) 마커 생성 보류
+            }
             
             // 필터링 적용된 가게들 중에서 + 화면 안에 있는 것만
-            // (1차로 검색 필터, 2차로 좌표 필터)
             const filtered = filterShops(allShops);
             const visibleShops = filtered.filter(shop => {
                 if(!shop.lat || !shop.lng) return false;
