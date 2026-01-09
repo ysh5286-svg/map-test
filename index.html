@@ -13,7 +13,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>">
     <meta property="og:title" content="🗺️ 대구핫플여기 보물지도">
     <meta property="og:description" content="대구 찐맛집과 핫플을 한눈에!&#10;실패 없는 맛집 지도">
-    <meta property="og:image" content="https://search.pstatic.net/common/?src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20260106_269%2F1767704133801UGRCw_JPEG%2FGemini_Generated_Image_b2zgovb2zgovb2zg.jpg">
+    <meta property="og:image" content="https://dazzlepeople.cafe24.com/bizdemo158475/component/board/board_1/u_image/4/1092248721_ECB9B4ED86A1EAB3B5EC9CA0EC82ACECA7842.jpg">
     <meta property="og:url" content="https://www.heredaegu.com">
 
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=krsv42ftzf&submodules=geocoder"></script>
@@ -50,7 +50,7 @@
     <div id="faqPanel" class="faq-panel">
         <div class="faq-header"><h3>자주 묻는 질문</h3><button class="faq-close" onclick="toggleFaq()">✕</button></div>
         <div class="faq-body">
-            <div class="faq-item"><div class="faq-q">Q. 다즐피플 보물지도는 무엇인가요?</div><div class="faq-a">대구 찐맛집 정보를 한눈에 볼 수 있는 서비스입니다.</div></div>
+            <div class="faq-item"><div class="faq-q">Q. '대구보물지도'는 무엇인가요?</div><div class="faq-a">대구 찐맛집 정보를 한눈에 볼 수 있는 서비스입니다.</div></div>
             <div class="faq-item"><div class="faq-q">Q. 어떤 기준으로 선정되나요?</div><div class="faq-a">'대구 찐맛집 평가단'이 직접 검증하고 엄선한 로컬 찐맛집 & 핫플만 모았습니다.</div></div>
             <div class="faq-item"><div class="faq-q">Q. 우리 가게도 등록하고 싶어요!</div><div class="faq-a">우측 하단 [보물지도 등록요청] 버튼을 눌러 신청해주세요.</div></div>
             
@@ -222,6 +222,23 @@
         var map = initMap();
         let allShops = [];
         let markerList = [];
+
+        // 1. [핵심] 창 크기가 변할 때(인스타/카톡 상하단바 움직임) 지도 새로고침
+        window.addEventListener('resize', function() {
+            map.refresh(); // 네이버 지도 크기 재설정
+            updateVisibleMarkers(); // 핀 다시 그리기
+        });
+
+        // 2. [핵심] 0.5초, 1초 뒤에 강제로 한번 더 그리기 (처음에 씹히는 것 방지)
+        setTimeout(function() {
+            map.refresh();
+            updateVisibleMarkers();
+        }, 500);
+
+        setTimeout(function() {
+            map.refresh();
+            updateVisibleMarkers();
+        }, 1500); // 혹시 몰라 1.5초 뒤에 한번 더 확인 사살
 
         const LANDMARKS = {
             "팔공산": { lat: 35.9899, lng: 128.6961 }, "갓바위": { lat: 35.9758, lng: 128.7694 },
@@ -437,30 +454,41 @@
                 .catch(err => console.log('서비스 워커 실패', err));
         }
 
-        // 🔥 [앱 설치 버튼 로직 - 아이폰/안드로이드 통합]
+        // 🔥 [앱 설치 버튼 로직 - 아이폰/안드로이드/인앱브라우저 통합]
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
 
-        // 1. 아이폰(iOS)인지 확인
-        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        // 사용자 환경 탐지
+        const ua = navigator.userAgent.toLowerCase();
+        const isIos = /iphone|ipad|ipod/.test(ua);
+        const isInApp = ua.includes('kakao') || ua.includes('instagram') || ua.includes('naver');
 
+        // 1. 아이폰(iOS) 로직
         if (isIos) {
-            // 🍎 아이폰이면: 버튼 무조건 보여주고 -> 누르면 안내 메시지
-            installBtn.style.display = 'block';
+            installBtn.style.display = 'block'; // 무조건 보임
             installBtn.addEventListener('click', () => {
-                alert("📲 아이폰 설치 방법\n\n1. 사파리 하단 '공유' 버튼 클릭\n2. 메뉴를 내려서 '홈 화면에 추가' 선택\n3. 바탕화면에 '대구핫플여기' 앱 생성!");
+                alert("📲 아이폰 설치 방법\n\n1. 사파리(Safari) 브라우저 하단 '공유' 버튼 클릭\n2. 메뉴를 내려서 '홈 화면에 추가' 선택\n3. 바탕화면에 '대구핫플여기' 앱 생성!");
             });
-        } else {
-            // 🤖 안드로이드/PC면: 설치 가능한 상황일 때만 버튼 보여주기
+        } 
+        // 2. 카카오톡/인스타그램 등 인앱 브라우저 로직
+        else if (isInApp) {
+            installBtn.style.display = 'block'; // 무조건 보임
+            installBtn.addEventListener('click', () => {
+                // 인앱에서는 설치가 안 되므로 안내 메시지 출력
+                alert("🚫 현재 브라우저에서는 다운로드가 제한됩니다.\n\n우측 하단(또는 상단)의 [더보기 ···] 버튼을 누르고\n[다른 브라우저로 열기]를 선택해주세요!\n\n(크롬, 삼성인터넷 등에서 설치 가능)");
+            });
+        }
+        // 3. 일반 안드로이드/PC (크롬, 삼성인터넷 등) 로직
+        else {
+            // 설치 가능한 상태가 되면 브라우저가 이 이벤트를 날림
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                installBtn.style.display = 'block';
+                installBtn.style.display = 'block'; // 이때만 버튼 등장
             });
 
             installBtn.addEventListener('click', (e) => {
-                // 아이폰이 아닐 때만 실행
-                if(!isIos && deferredPrompt) {
+                if (deferredPrompt) {
                     deferredPrompt.prompt();
                     deferredPrompt.userChoice.then((choiceResult) => {
                         if (choiceResult.outcome === 'accepted') {
@@ -468,6 +496,9 @@
                         }
                         deferredPrompt = null;
                     });
+                } else {
+                    // 혹시라도 버튼은 떠있는데 이벤트가 없는 경우
+                    alert("이미 설치되어 있거나, 브라우저 설정 메뉴에서 '앱 설치'를 직접 눌러주세요!");
                 }
             });
         }
