@@ -78,7 +78,7 @@ export function createMarker(map, shopList, onClick) {
         map: map,
         icon: {
             content: contentHtml,
-            size: new naver.maps.Size(0, 0),
+            
             anchor: new naver.maps.Point(0, 0) // 중심점 잡기
         }
     });
