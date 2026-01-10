@@ -216,7 +216,8 @@
     </script>
 
     <script type="module">
-    import { db, initMap, createMarker } from "./common.js";
+    // 뒤에 ?v=2.0 을 붙이세요 (숫자는 아무거나 상관없음)
+import { db, initMap, createMarker } from "./common.js?v=2.0";
     import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // 1. 지도부터 즉시 실행 (로딩 기다리지 않음)
