@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dazzle-map-v1.6'; // 버전 조금 올림 (새로 적용되라고)
+const CACHE_NAME = 'dazzle-map-v1.7'; // 버전 조금 올림 (새로 적용되라고)
 
 // 🔥 캐시할 파일 목록 (외부 라이브러리도 포함해야 빨라짐)
 const urlsToCache = [
@@ -28,13 +28,15 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
 
-  // ⛔️ 지도 API, 파이어베이스 DB 데이터는 캐시 금지 (항상 실시간)
-  if (url.includes('naver') || 
-      url.includes('firestore') || 
-      url.includes('googleapis') || 
-      url.includes('gstatic')) {
-    return; // 그냥 네트워크로 가라 (이벤트 종료)
-  }
+  // sw.js 수정
+
+// ⛔️ 지도 API만 캐시 금지 (지도는 항상 최신 상태 유지 필요)
+if (url.includes('naver')) {
+    return;
+}
+
+// ✅ 파이어베이스 데이터도 이제 캐싱을 시도합니다.
+// (나머지 로직은 그대로 둡니다)
 
   // ✅ 나머지는 캐시 우선 (Cache First)
   // "저장된 거 있으면 바로 보여주고, 없으면 그때 인터넷 써라"
