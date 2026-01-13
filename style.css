@@ -16,36 +16,29 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Noto Sans KR', s
 #map { width: 100%; height: 100%; z-index: 0; }
 
 /* 3. 마커 라벨 (위치 정렬 완벽 수정됨) */
-/* style.css 파일의 .marker-label 부분 수정 */
-
 .marker-label {
-    background: white; 
-    border-radius: 12px; 
-    padding: 6px 10px; 
-    text-align: center;
-    min-width: 80px; 
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2); 
-    cursor: pointer; 
+    background: white; border-radius: 12px; padding: 6px 10px; text-align: center;
+    min-width: 80px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); 
+    /* border는 JS에서 색상별로 들어감 */
+    cursor: pointer; position: absolute; 
     
-    /* 🔥 [수정 1] absolute 대신 relative 사용 (위치 버그 방지) */
-    position: relative; 
+    /* 🔥 지도 좌표에 정확히 꽂히도록 위치 조정 */
+    transform: translate(-50%, -100%); 
+    margin-top: -8px; /* 화살표 높이만큼 위로 */
     
-    /* 🔥 [수정 2] 아이폰용 3D 가속 명령어 추가 (이게 핵심!) */
-    transform: translate3d(-50%, -100%, 0); 
-    -webkit-transform: translate3d(-50%, -100%, 0); /* 구형 사파리 호환 */
-    
-    /* 🔥 [수정 3] 깜빡임 방지 */
-    will-change: transform;
-    
-    margin-top: -8px; 
-    white-space: nowrap; 
-    z-index: 100; /* 지도 타일에 묻히지 않게 높임 */
+    white-space: nowrap; z-index: 10;
 }
-.marker-label:hover { 
-    z-index: 9999; 
-    transform: translate3d(-50%, -100%, 0) scale(1.05); 
-    -webkit-transform: translate3d(-50%, -100%, 0) scale(1.05);
-    transition: transform 0.1s; 
+.marker-label:hover { z-index: 9999; transform: translate(-50%, -100%) scale(1.05); transition: transform 0.1s; }
+
+/* 마커 꼬리 (화살표) */
+.marker-arrow {
+    position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    /* border-top-color는 JS에서 들어감 */
+    border-top-width: 8px;
+    border-top-style: solid;
 }
 
 .overlay-badge { font-size: 10px; font-weight: bold; display: block; margin-bottom: 2px; }
@@ -244,3 +237,58 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Noto Sans KR', s
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 #loadingOverlay p { font-weight: bold; color: #555; }
 #loadingOverlay.fade-out { opacity: 0; pointer-events: none; }
+
+/* --- 테마 모드 업데이트 추가 스타일 --- */
+
+/* 1. 사용자 모드: 테마 선택 셀렉트박스 (검색창 상단 강조) */
+.theme-select-wrapper {
+    padding: 0 5px 10px 5px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 5px;
+}
+.theme-select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #c0392b;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #c0392b;
+    background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c0392b" width="18px" height="18px"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center;
+    appearance: none; /* 기본 화살표 제거 */
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(192, 57, 43, 0.1);
+}
+.theme-select:focus { outline: none; box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.2); }
+
+/* 2. 관리자 모드: 테마 관리 패널 */
+.admin-theme-panel {
+    /* position: absolute 제거 -> 검색창 아래에 자연스럽게 배치 */
+    position: relative; 
+    width: 100%; 
+    background: white; 
+    border-radius: 8px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    padding: 10px; 
+    margin-top: 10px; /* 검색창과 간격 띄우기 */
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px;
+    border: 2px solid #2c3e50;
+    z-index: 100;
+}
+.theme-control-row { display: flex; gap: 5px; align-items: center; }
+.theme-mode-badge {
+    background: #e74c3c; color: white; padding: 4px 8px; border-radius: 4px; 
+    font-size: 11px; font-weight: bold; animation: blink 2s infinite; display: none;
+}
+@keyframes blink { 50% { opacity: 0.5; } }
+
+/* 토스트 메시지 (관리자용) */
+.toast-msg {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px;
+    font-size: 14px; z-index: 2000; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast-msg.show { opacity: 1; }
+

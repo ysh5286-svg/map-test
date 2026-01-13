@@ -74,15 +74,16 @@ export function createMarker(map, shopList, onClick) {
     `;
 
     var marker = new naver.maps.Marker({
-    position: new naver.maps.LatLng(mainShop.lat, mainShop.lng),
-    map: map,
-    icon: {
-        content: contentHtml
-        // size, anchor 줄을 아예 지웠습니다! (자동으로 잡힙니다)
-    }
-});
+        position: new naver.maps.LatLng(mainShop.lat, mainShop.lng),
+        map: map,
+        icon: {
+            content: contentHtml,
+            size: new naver.maps.Size(0, 0),
+            anchor: new naver.maps.Point(0, 0) // 중심점 잡기
+        }
+    });
 
-    if (onClick) {
+if (onClick) {
         naver.maps.Event.addListener(marker, 'click', function(e) {
             onClick(shopList); 
         });

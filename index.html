@@ -16,6 +16,8 @@
     <meta property="og:image" content="https://dazzlepeople.cafe24.com/bizdemo158475/component/board/board_1/u_image/4/546462826_Gemini_Generated_Image_ummtjlummtjlummt.jpg">
     <meta property="og:url" content="https://www.heredaegu.com">
 
+    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=krsv42ftzf&submodules=geocoder"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -27,6 +29,11 @@
 
     <div class="search-container">
         <div class="search-box-wrapper">
+            <div class="theme-select-wrapper">
+                <select id="mainThemeSelect" class="theme-select" onchange="applyAllFilters()">
+                    <option value="ALL">💎 전체 맛집 보기</option>
+                    </select>
+            </div>
             <div class="search-filters">
                 <select id="filterRegion" class="search-select" onchange="applyAllFilters()">
                     <option value="">📍 지역 전체</option><option value="수성구">수성구</option><option value="중구">중구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="경산">경산</option><option value="청도">청도</option><option value="대구 밖">대구 밖</option>
@@ -54,7 +61,7 @@
             
             <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <a href="https://open.kakao.com/o/gaV5kk8h" target="_blank" class="panel-btn" style="background:#fee500; color:#3c1e1e;">💬 대구핫플여기 찐맛집 정보방</a>
+                <a href="https://open.kakao.com/o/gaV5kk8h" target="_blank" class="panel-btn" style="background:#fee500; color:#3c1e1e;">💬 대구경북 찐맛집 소통방</a>
                 <button onclick="openGameModal()" class="panel-btn" style="background:#2c3e50;">🎮 오늘 뭐 먹지?</button>
                 <a href="https://litt.ly/dazzlepeople" target="_blank" class="panel-btn" style="background:#e1306c;">📱 SNS 구경가기</a>
             </div>
@@ -181,9 +188,6 @@
 
     <div id="map"></div>
 
-        <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=krsv42ftzf&submodules=geocoder"></script>
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
     <script>
         // ... (기존 게임 관련 스크립트) ...
         function toggleFaq() { document.getElementById('faqPanel').classList.toggle('show'); }
@@ -216,166 +220,274 @@
     </script>
 
     <script type="module">
-    // 뒤에 ?v=2.0 을 붙이세요 (숫자는 아무거나 상관없음)
-import { db, initMap, createMarker } from "./common.js?v=2.0";
-    import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { db, initMap, createMarker } from "./common.js";
+        import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // 1. 지도부터 즉시 실행 (로딩 기다리지 않음)
-    var map = initMap();
-    let allShops = [];
-    let markerList = [];
-    let renderingTimer = null;
+        var map = initMap();
+        let allShops = [];
+        let markerList = [];
 
-    // 2. 지도가 준비되면 로딩화면 바로 끄기 (속임수: 데이터 없어도 일단 지도 보여줌)
-    naver.maps.Event.once(map, 'init', function() {
-        const loader = document.getElementById('loadingOverlay');
-        if(loader) loader.classList.add('fade-out');
-    });
+        window.addEventListener('resize', function() { map.refresh(); updateVisibleMarkers(); });
+        setTimeout(function() { map.refresh(); updateVisibleMarkers(); }, 500);
+        setTimeout(function() { map.refresh(); updateVisibleMarkers(); }, 1500);
 
-    // 안전장치: 1.5초 뒤에는 무조건 로딩창 끄기
-    setTimeout(() => {
-        const loader = document.getElementById('loadingOverlay');
-        if(loader) loader.classList.add('fade-out');
-    }, 1500);
+        // ... (랜드마크 변수 LANDMARKS 기존 유지 - 코드 길이상 생략하지만 꼭 있어야 함) ...
+        const LANDMARKS = {
+            "팔공산": { lat: 35.9899, lng: 128.6961 }, "갓바위": { lat: 35.9758, lng: 128.7694 },
+            "반월당": { lat: 35.8644, lng: 128.5933 }, "동성로": { lat: 35.8710, lng: 128.5960 },
+            "수성못": { lat: 35.8280, lng: 128.6170 }, "이월드": { lat: 35.8530, lng: 128.5630 },
+            "83타워": { lat: 35.8530, lng: 128.5630 }, "두류공원": { lat: 35.8475, lng: 128.5583 },
+            "동대구역": { lat: 35.8770, lng: 128.6285 }, "대구역": { lat: 35.8764, lng: 128.5960 },
+            "서문시장": { lat: 35.8690, lng: 128.5815 }, "김광석거리": { lat: 35.8603, lng: 128.6080 },
+            "앞산": { lat: 35.8335, lng: 128.5810 }, "강정보": { lat: 35.8430, lng: 128.4690 },
+            "디아크": { lat: 35.8430, lng: 128.4690 }, "삼성라이온즈파크": { lat: 35.8411, lng: 128.6817 },
+            "라팍": { lat: 35.8411, lng: 128.6817 }, "대구공항": { lat: 35.8970, lng: 128.6440 },
+            "경북대": { lat: 35.8906, lng: 128.6121 }, "계명대": { lat: 35.8535, lng: 128.4860 },
+            "영남대": { lat: 35.8306, lng: 128.7562 }
+        };
 
-    // 3. 데이터 로드 (캐시 + 나눠서 그리기 적용)
-    async function loadShopData() {
-        const CACHE_KEY = "dazzle_shop_data_v1";
-        const CACHE_TIME_KEY = "dazzle_shop_time";
-        const now = new Date().getTime();
-
-        const cachedData = localStorage.getItem(CACHE_KEY);
-        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
-
-        // (1) 저장된 데이터 있고, 24시간 안 지났으면 -> 그거 씀 (0.1초 컷)
-        if (cachedData && cachedTime && (now - cachedTime < 86400000)) {
-            console.log("🚀 캐시 데이터 사용");
-            allShops = JSON.parse(cachedData);
-            updateVisibleMarkers(); 
-        } 
-        // (2) 없으면 다운로드 (다운로드 후 나눠서 그림)
-        else {
-            console.log("🔄 서버 다운로드 시작");
-            try {
-                const snapshot = await getDocs(collection(db, "shops"));
-                allShops = [];
-                snapshot.forEach((doc) => allShops.push({ id: doc.id, ...doc.data() }));
-
-                // 휴대폰에 저장
-                localStorage.setItem(CACHE_KEY, JSON.stringify(allShops));
-                localStorage.setItem(CACHE_TIME_KEY, now);
-                
-                updateVisibleMarkers();
-            } catch (e) {
-                console.error("데이터 로드 실패:", e);
-            }
-        }
-    }
-
-    // 4. 🔥 핵심: 핀을 30개씩 나눠서 그리는 함수 (렉 방지)
-    function renderMarkers(shops) {
-        // (1) 기존 렌더링 중단 및 마커 삭제
-        if (renderingTimer) clearTimeout(renderingTimer);
-        markerList.forEach(m => m.setMap(null));
-        markerList = [];
-
-        // (2) 위치별로 그룹핑 (클러스터링 로직 유지)
-        const groups = {};
-        shops.forEach(shop => {
-            if(!shop.lat || !shop.lng) return;
-            const key = shop.lat.toFixed(5) + "," + shop.lng.toFixed(5);
-            if(!groups[key]) groups[key] = [];
-            groups[key].push(shop);
+        naver.maps.Event.addListener(map, "click", function() {
+            closePanel(); document.getElementById('faqPanel').classList.remove('show');
         });
 
-        // (3) 그룹들을 배열로 변환
-        const groupKeys = Object.keys(groups);
-        let index = 0;
-        const BATCH_SIZE = 30; // 💡 한 번에 그릴 핀 개수
-
-        // (4) 반복 실행 함수 (재귀)
-        function drawBatch() {
-            if (index >= groupKeys.length) return; // 끝
-
-            const end = Math.min(index + BATCH_SIZE, groupKeys.length);
-            for (let i = index; i < end; i++) {
-                const key = groupKeys[i];
-                // 최신순 정렬
-                groups[key].sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+        // ==========================================
+        // 🔥 테마 목록 로딩 (정렬 및 기본값 설정)
+        // ==========================================
+        async function initTheme() {
+            const select = document.getElementById('mainThemeSelect');
+            try {
+                const docRef = doc(db, "meta", "themes");
+                const docSnap = await getDoc(docRef);
                 
+                // 기존 옵션 비우기 ('전체보기'는 나중에 다시 넣음)
+                select.innerHTML = '';
+
+                if (docSnap.exists()) {
+                    let list = docSnap.data().list || [];
+                    
+                    // 🔥 이름순 정렬 (관리자가 1_.., 2_.. 정한 순서대로)
+                    list.sort();
+
+                    list.forEach((t, index) => {
+                        const opt = document.createElement('option');
+                        opt.value = t;
+                        opt.innerText = `🚩 ${t}`;
+                        select.appendChild(opt);
+                    });
+                    
+                    // 정렬된 리스트의 첫 번째 항목을 기본값으로 선택
+                    if (list.length > 0) {
+                        select.value = list[0]; 
+                    }
+                }
+                
+                // '전체 맛집 보기' 옵션은 맨 뒤에 추가
+                const allOpt = document.createElement('option');
+                allOpt.value = "ALL";
+                allOpt.innerText = "📂 전체 맛집 보기";
+                select.appendChild(allOpt); 
+                
+                // 만약 테마가 하나도 없으면 '전체'를 기본값으로
+                if (select.options.length === 1) select.value = "ALL";
+
+                // 데이터 로드 후 필터 즉시 적용
+                if(allShops.length > 0) updateVisibleMarkers();
+
+            } catch(e) {
+                console.log("테마 로딩 실패:", e);
+                // 실패 시 기본 옵션 추가
+                const allOpt = document.createElement('option');
+                allOpt.value = "ALL"; allOpt.innerText = "📂 전체 맛집 보기";
+                select.appendChild(allOpt);
+            }
+        }
+        initTheme(); // 실행
+
+        if(db) {
+            getDocs(collection(db, "shops")).then((snapshot) => {
+                allShops = [];
+                snapshot.forEach((doc) => allShops.push({ id: doc.id, ...doc.data() }));
+                
+                updateVisibleMarkers();
+                document.getElementById('loadingOverlay').classList.add('fade-out');
+            }).catch(e => {
+                console.error("Error:", e);
+                document.getElementById('loadingOverlay').classList.add('fade-out');
+            });
+        }
+
+        naver.maps.Event.addListener(map, 'idle', updateVisibleMarkers);
+
+        function updateVisibleMarkers() {
+            const bounds = map.getBounds();
+            if (!bounds) return;
+            const filtered = filterShops(allShops);
+            const visibleShops = filtered.filter(shop => {
+                if(!shop.lat || !shop.lng) return false;
+                const pos = new naver.maps.LatLng(shop.lat, shop.lng);
+                return bounds.hasLatLng(pos);
+            });
+            renderMarkers(visibleShops);
+        }
+
+        window.moveToCurrentLocation = function() {
+            map.refresh(); 
+            if (!navigator.geolocation) { alert("위치 정보를 사용할 수 없습니다."); return; }
+            const btnText = document.querySelector('.loc-text');
+            if(btnText) btnText.innerText = "탐색중..";
+            navigator.geolocation.getCurrentPosition((position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const loc = new naver.maps.LatLng(lat, lng);
+                map.setCenter(loc); map.setZoom(16);
+                setTimeout(() => { updateVisibleMarkers(); if(btnText) btnText.innerText = "내 주변"; }, 300);
+                if (window.myLocationMarker) window.myLocationMarker.setMap(null);
+                window.myLocationMarker = new naver.maps.Marker({
+                    position: loc, map: map,
+                    icon: { content: '<div style="width:16px;height:16px;background:#3498db;border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>', anchor: new naver.maps.Point(8, 8) }
+                });
+            }, () => { alert("위치 정보를 가져올 수 없습니다."); if(btnText) btnText.innerText = "내 주변"; });
+        }
+
+        $('#keyword').on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const query = $(this).val().replace(/\s+/g, '');
+                if(!query) return;
+                for (const key in LANDMARKS) {
+                    if (query.includes(key)) {
+                        const coords = LANDMARKS[key];
+                        map.setCenter(new naver.maps.LatLng(coords.lat, coords.lng));
+                        map.setZoom(15);
+                        return;
+                    }
+                }
+                searchAddressToCoordinate($(this).val().trim());
+            }
+        });
+
+        function searchAddressToCoordinate(query, isRetry = false) {
+            naver.maps.Service.geocode({ query: query }, function(status, response) {
+                if (status === naver.maps.Service.Status.OK) {
+                    if (response.v2 && response.v2.addresses.length > 0) {
+                        const item = response.v2.addresses[0];
+                        map.setCenter(new naver.maps.Point(item.x, item.y));
+                        map.setZoom(16);
+                    } else if (response.result && response.result.items.length > 0) {
+                        const item = response.result.items[0];
+                        map.setCenter(new naver.maps.Point(item.point.x, item.point.y));
+                        map.setZoom(16);
+                    } else {
+                        if(!isRetry && query.indexOf('대구') === -1) searchAddressToCoordinate("대구 " + query, true);
+                        else alert("주소를 찾을 수 없습니다.");
+                    }
+                } else {
+                    if(!isRetry && query.indexOf('대구') === -1) searchAddressToCoordinate("대구 " + query, true);
+                    else alert("검색 실패");
+                }
+            });
+        }
+
+        function renderMarkers(shops) {
+            markerList.forEach(m => m.setMap(null));
+            markerList = [];
+            const groups = {};
+            shops.forEach(shop => {
+                if(!shop.lat || !shop.lng) return;
+                const key = shop.lat.toFixed(5) + "," + shop.lng.toFixed(5);
+                if(!groups[key]) groups[key] = [];
+                groups[key].push(shop);
+            });
+            for(const key in groups) {
+                groups[key].sort((a, b) => {
+                    const dateA = a.updatedAt ? (a.updatedAt.seconds || 0) : 0;
+                    const dateB = b.updatedAt ? (b.updatedAt.seconds || 0) : 0;
+                    return dateB - dateA;
+                });
                 const marker = createMarker(map, groups[key], function(clickedList) {
                     if (clickedList.length === 1) showPanel(clickedList[0]);
                     else showSelectModal(clickedList);
                 });
-
-                if (marker) markerList.push(marker);
+                if(marker) markerList.push(marker);
             }
-
-            index += BATCH_SIZE;
-
-            // 0.01초 쉬었다가 다음꺼 그림 (화면 멈춤 방지)
-            renderingTimer = setTimeout(drawBatch, 10); 
         }
 
-        // 그리기 시작!
-        drawBatch();
-    }
+        function showSelectModal(shopList) {
+            const listEl = document.getElementById('selectList');
+            listEl.innerHTML = '';
+            shopList.forEach(shop => {
+                const div = document.createElement('div');
+                div.className = 'shop-select-item';
+                var cat = Array.isArray(shop.category) ? shop.category[0] : shop.category;
+                div.innerHTML = `<span class="shop-select-name">${shop.name}</span><span class="shop-select-cat">${cat || '맛집'}</span>`;
+                div.onclick = () => { closeSelectModal(); showPanel(shop); };
+                listEl.appendChild(div);
+            });
+            document.getElementById('selectModal').classList.add('show');
+        }
 
-    // --- (이 아래는 기존 필수 함수들 유지) ---
+        // 🔥 테마 필터 (기존 로직 유지)
+        function filterShops(shops) {
+            var theme = $('#mainThemeSelect').val();
+            var region = $('#filterRegion').val();
+            var category = $('#filterCategory').val();
+            var purpose = $('#filterPurpose').val();
+            var keywordInput = $('#keyword').val().toLowerCase().trim();
+            var keywords = keywordInput.split(/\s+/).filter(t => t.length > 0);
 
-    // 지도 움직임 멈추면 보이는 것만 다시 계산
-    naver.maps.Event.addListener(map, 'idle', updateVisibleMarkers);
+            return shops.filter(shop => {
+                var matchTheme = true;
+                if (theme && theme !== 'ALL') {
+                    if (!shop.themes || !shop.themes.includes(theme)) {
+                        matchTheme = false;
+                    }
+                }
+                var matchRegion = (region === "") || (shop.region === region);
+                var shopCategories = Array.isArray(shop.category) ? shop.category : [shop.category];
+                var matchCategory = (category === "") || shopCategories.includes(category);
+                var shopPurposes = Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose];
+                var matchPurpose = (purpose === "") || shopPurposes.includes(purpose);
+                
+                var searchableText = (shop.name + " " + (shop.menu || "") + " " + (shop.area || "") + " " + (shop.address || "") + " " + shopCategories.join(" ")).toLowerCase();
+                var matchKeyword = true;
+                if (keywords.length > 0) {
+                    matchKeyword = keywords.every(term => searchableText.includes(term));
+                }
+                return matchTheme && matchRegion && matchCategory && matchPurpose && matchKeyword;
+            });
+        }
 
-    window.updateVisibleMarkers = function() {
-        const bounds = map.getBounds();
-        if (!bounds) return;
-        
-        const filtered = filterShops(allShops);
-        const visibleShops = filtered.filter(shop => {
-            if(!shop.lat || !shop.lng) return false;
-            return bounds.hasLatLng(new naver.maps.LatLng(shop.lat, shop.lng));
-        });
+        window.applyAllFilters = function() { updateVisibleMarkers(); };
 
-        renderMarkers(visibleShops);
-    }
-    
-    // 시작!
-    if(db) loadShopData();
+        function showPanel(data) {
+            var img = data.imageUrl || 'https://via.placeholder.com/400x200?text=No+Image';
+            $('#panelHeader').css('background-image', `url(${img})`);
+            $('#panelTitle').text(data.name);
+            var categories = Array.isArray(data.category) ? data.category : [data.category];
+            var purposes = Array.isArray(data.purpose) ? data.purpose : [data.purpose];
+            var themes = data.themes || [];
+            var tags = [...categories, data.region, ...purposes, ...themes, data.area].filter(Boolean);
+            $('#panelMeta').html(tags.map(t => `<span class="panel-tag">#${t}</span>`).join(''));
+            $('#panelTotal').text(data.totalScore || '0.0');
+            setTimeout(() => {
+                $('#barTaste').css('width', (data.scoreTaste || 0) * 20 + '%');
+                $('#barValue').css('width', (data.scoreValue || 0) * 20 + '%');
+                $('#barMood').css('width', (data.scoreMood || 0) * 20 + '%');
+                $('#barKind').css('width', (data.scoreKind || 0) * 20 + '%');
+            }, 100);
+            $('#panelMenu').text(data.menu || '-');
+            $('#panelAddr').text(data.address || '-');
+            $('#panelDesc').text(data.desc || '설명 없음');
+            $('#panelLink').attr('href', data.link || '#');
+            document.getElementById('faqPanel').classList.remove('show');
+            $('#infoPanel').addClass('show');
+        }
 
-    // 창 크기 변경 대응
-    window.addEventListener('resize', function() { map.refresh(); updateVisibleMarkers(); });
-
-    // ... (나머지 filterShops, showPanel 등 기존 함수들은 그대로 두세요) ...
-    window.filterShops = function(shops) {
-        var region = $('#filterRegion').val();
-        var category = $('#filterCategory').val();
-        var purpose = $('#filterPurpose').val();
-        var keywordInput = $('#keyword').val().toLowerCase().trim();
-        var keywords = keywordInput.split(/\s+/).filter(t => t.length > 0);
-
-        return shops.filter(shop => {
-            var matchRegion = (region === "") || (shop.region === region);
-            var cats = Array.isArray(shop.category) ? shop.category : [shop.category];
-            var matchCategory = (category === "") || cats.includes(category);
-            var purs = Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose];
-            var matchPurpose = (purpose === "") || purs.includes(purpose);
-            
-            var text = (shop.name + " " + (shop.menu||"") + " " + (shop.area||"") + " " + (shop.address||"") + " " + cats.join(" ")).toLowerCase();
-            var matchKeyword = keywords.length === 0 || keywords.every(t => text.includes(t));
-
-            return matchRegion && matchCategory && matchPurpose && matchKeyword;
-        });
-    }
-
-    window.applyAllFilters = function() { updateVisibleMarkers(); };
-    
-    // ... (이후 showPanel, showSelectModal, moveToCurrentLocation 등 기존 코드 복사해서 붙여넣으세요) ...
-    // ... (LANDMARKS 상수도 필요하면 복사) ...
-    // ... 기존 코드의 마지막 부분들 ...
-
-    // (기존 코드의 나머지 함수들이 여기에 들어와야 합니다. 너무 길어서 생략하지만, 
-    //  filterShops 밑에 있는 moveToCurrentLocation, searchAddressToCoordinate, showPanel, showSelectModal 등은 꼭 있어야 합니다.)
-
-</script>
+        // PWA 설치 로직 (기존 유지)
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(err => console.log('서비스 워커 실패', err));
+        let deferredPrompt; const installBtn = document.getElementById('installBtn'); const ua = navigator.userAgent.toLowerCase(); const isIos = /iphone|ipad|ipod/.test(ua); const isInApp = ua.includes('kakao') || ua.includes('instagram') || ua.includes('naver');
+        if (isIos) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("📲 아이폰 설치 방법\n\n1. 사파리(Safari) 브라우저 하단 '공유' 버튼 클릭\n2. 메뉴를 내려서 '홈 화면에 추가' 선택\n3. 바탕화면에 '대구핫플여기' 앱 생성!")); } 
+        else if (isInApp) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("🚫 현재 브라우저에서는 다운로드가 제한됩니다.\n\n우측 하단(또는 상단)의 [더보기 ···] 버튼을 누르고\n[다른 브라우저로 열기]를 선택해주세요!")); }
+        else { window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; }); installBtn.addEventListener('click', (e) => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') installBtn.style.display = 'none'; deferredPrompt = null; }); } else alert("이미 설치됨"); }); }
+    </script>
 </body>
 </html>
