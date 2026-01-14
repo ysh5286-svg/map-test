@@ -45,6 +45,8 @@
                 </select>
                 <button onclick="addNewTheme()" style="background:#2ecc71; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">+추가</button>
                 <button onclick="deleteTheme()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">-삭제</button>
+
+                <button onclick="renameTheme()" style="background:#3498db; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; margin-left:5px;">✏️이름/순서 변경</button>
             </div>
             
             <div id="themeModeStatus" class="theme-mode-badge">
@@ -221,38 +223,109 @@
             loadThemes();
         }
 
-        // 🔥 [중요] 테마 삭제 시 해당 태그가 달린 모든 업체에서 태그 제거
-        window.deleteTheme = async function() {
-            const val = document.getElementById('adminThemeSelect').value;
-            if(!val) return alert("삭제할 테마를 선택해주세요.");
-            
-            if(!confirm(`⚠️ 정말 '${val}' 테마를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없으며,\n해당 테마로 등록된 모든 업체의 태그도 자동으로 삭제됩니다.`)) return;
+        // 🔥 [NEW] 테마 이름 변경 & 순서 변경 함수
+        window.renameTheme = async function() {
+            const oldName = document.getElementById('adminThemeSelect').value;
+            if (!oldName) return alert("수정할 테마를 선택해주세요.");
 
-            // 1. 메타 데이터(목록)에서 제거
-            themeList = themeList.filter(t => t !== val);
-            await setDoc(doc(db, "meta", "themes"), { list: themeList });
+            // 현재 이름을 기본값으로 띄워줌
+            const newName = prompt(
+                `'${oldName}'의 새로운 이름을 입력하세요.\n\n(💡 팁: '1_맛집' 처럼 앞의 번호를 바꾸면 순서가 변경됩니다)`, 
+                oldName
+            );
 
-            // 2. 해당 테마를 가지고 있는 모든 업체 검색 및 삭제 (Batch 처리)
+            // 취소했거나 이름이 같으면 중단
+            if (!newName || newName === oldName) return;
+            if (themeList.includes(newName)) return alert("⛔ 이미 존재하는 테마 이름입니다.");
+
+            if (!confirm(`⚠️ 정말 '${oldName}' → '${newName}' 으로 변경하시겠습니까?\n\n이 테마가 적용된 모든 맛집의 태그도 자동으로 수정됩니다.\n(데이터가 많으면 시간이 조금 걸릴 수 있습니다)`)) return;
+
             try {
-                showToast("♻️ 업체 태그 청소 중...");
-                const q = query(collection(db, "shops"), where("themes", "array-contains", val));
-                const querySnapshot = await getDocs(q);
+                showToast("♻️ 테마 이름 교체 작업 중...");
+
+                // 1. 메타 데이터(목록) 업데이트
+                // 기존 리스트에서 이름만 쏙 바꿔치기 하고 정렬
+                themeList = themeList.map(t => t === oldName ? newName : t);
+                themeList.sort(); // 가나다(숫자)순 재정렬
                 
-                // 하나씩 업데이트 (안전하게)
-                const promises = querySnapshot.docs.map(doc => 
-                    updateDoc(doc.ref, { themes: arrayRemove(val) })
-                );
-                await Promise.all(promises);
+                await setDoc(doc(db, "meta", "themes"), { list: themeList });
 
-                alert(`삭제 완료!\n'${val}' 테마와 연결된 ${promises.length}개의 업체 태그도 정리되었습니다.`);
-            } catch(e) {
+                // 2. 해당 테마를 가지고 있는 모든 맛집 찾아서 업데이트 (Batch 처리)
+                // (옛날 이름 지우고 -> 새 이름 넣기)
+                const q = query(collection(db, "shops"), where("themes", "array-contains", oldName));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const promises = querySnapshot.docs.map(async (docSnapshot) => {
+                        const shopRef = doc(db, "shops", docSnapshot.id);
+                        // 안전하게 순차 처리: 삭제 후 추가
+                        await updateDoc(shopRef, { themes: arrayRemove(oldName) });
+                        await updateDoc(shopRef, { themes: arrayUnion(newName) });
+                    });
+                    
+                    await Promise.all(promises);
+                }
+
+                alert(`✅ 변경 완료!\n총 ${querySnapshot.size}개의 맛집 정보가 수정되었습니다.`);
+                
+                // UI 새로고침 및 선택값 유지
+                await loadThemes();
+                document.getElementById('adminThemeSelect').value = newName;
+                toggleThemeMode(); // 바뀐 이름으로 태깅 모드 유지
+
+            } catch (e) {
                 console.error(e);
-                alert("목록은 삭제했으나 업체 태그 정리 중 오류 발생: " + e.message);
+                alert("❌ 오류 발생: " + e.message);
             }
+        }
 
-            loadThemes();
-            document.getElementById('adminThemeSelect').value = "";
-            toggleThemeMode();
+        window.deleteTheme = async function() {
+            const select = document.getElementById('adminThemeSelect');
+            const targetTheme = select.value;
+
+            // 1. 선택된 테마가 있는지 확인
+            if (!targetTheme) return alert("❌ 삭제할 테마를 먼저 선택해주세요.");
+
+            // 2. 삭제 확인 (실수 방지)
+            if (!confirm(`⚠️ 정말 '${targetTheme}' 테마를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없으며,\n해당 테마가 적용된 모든 맛집에서 태그가 제거됩니다.`)) return;
+
+            try {
+                showToast("🗑️ 테마 삭제 및 청소 중...");
+
+                // 3. 메타 데이터(목록)에서 삭제
+                const themeRef = doc(db, "meta", "themes");
+                await updateDoc(themeRef, {
+                    list: arrayRemove(targetTheme)
+                });
+
+                // 4. 해당 테마를 달고 있는 맛집들에서 태그 제거 (데이터 청소)
+                const q = query(collection(db, "shops"), where("themes", "array-contains", targetTheme));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const promises = querySnapshot.docs.map(docSnapshot => {
+                        const shopRef = doc(db, "shops", docSnapshot.id);
+                        return updateDoc(shopRef, { 
+                            themes: arrayRemove(targetTheme) 
+                        });
+                    });
+                    await Promise.all(promises);
+                }
+
+                alert(`✅ 삭제 완료!\n총 ${querySnapshot.size}개의 맛집에서 '${targetTheme}' 태그가 제거되었습니다.`);
+
+                // 5. 화면 즉시 반영 (새로고침 없이)
+                themeList = themeList.filter(t => t !== targetTheme); // 내부 리스트에서 제거
+                select.remove(select.selectedIndex); // 드롭다운에서 제거
+                
+                // 선택 초기화 및 모드 끄기
+                select.value = "";
+                toggleThemeMode();
+
+            } catch (e) {
+                console.error(e);
+                alert("❌ 오류 발생: " + e.message);
+            }
         }
 
         function handleMarkerClick(clickedList) {
@@ -355,49 +428,47 @@
             }
         }
 
-        $('#adminSearch').on('keyup', function() {
-            const keyword = $(this).val().toLowerCase();
-            const filteredShops = allShopsData.filter(shop => shop.name.toLowerCase().includes(keyword));
-            renderMarkers(filteredShops);
+        // 기존의 $('#adminSearch').on('input'...) 부분을 찾아서 이 코드로 덮어쓰세요.
+
+$('#adminSearch').on('keydown', function(e) {
+    // 엔터키(Enter)를 눌렀을 때만 실행
+    if (e.key === 'Enter') {
+        const keyword = $(this).val().toLowerCase().replace(/\s+/g, '');
+        
+        // 1. 검색어가 없으면 전체 목록 다시 보여주기
+        if (!keyword) {
+            renderMarkers(allShopsData);
+            return;
+        }
+
+        // 2. 필터링 (이름 공백 제거 후 비교)
+        const filteredShops = allShopsData.filter(shop => {
+            if (!shop.name) return false;
+            const shopName = shop.name.toLowerCase().replace(/\s+/g, '');
+            return shopName.includes(keyword);
         });
 
-        function showSelectModal(list, isTaggingMode = false) {
-            const el = document.getElementById('selectList');
-            el.innerHTML = '';
-            list.forEach(shop => {
-                const div = document.createElement('div');
-                div.className = 'shop-select-item';
-                let badge = '';
-                if(isTaggingMode && shop.themes && shop.themes.includes(currentThemeMode)) {
-                    badge = `<span style="color:#2ecc71; font-weight:bold; margin-left:5px;">(✔ 포함됨)</span>`;
-                }
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'shop-select-info';
-                infoDiv.innerHTML = `<span class="shop-select-name">${shop.name} ${badge}</span> <span style="font-size:11px; color:#888;">${shop.category || ''}</span>`;
-                infoDiv.onclick = () => { 
-                    if(isTaggingMode) { toggleShopTheme(shop); closeSelectModal(); } 
-                    else { closeSelectModal(); openEditModal(shop); }
-                };
-                div.appendChild(infoDiv);
-                if(!isTaggingMode) {
-                    const promoteBtn = document.createElement('button');
-                    promoteBtn.className = 'btn-promote';
-                    promoteBtn.innerHTML = '⭐ 대표로 설정';
-                    promoteBtn.onclick = async (e) => {
-                        e.stopPropagation();
-                        if(confirm(`'${shop.name}'을(를) 이 위치의 대표(맨 위)로 설정하시겠습니까?`)) {
-                            try {
-                                await updateDoc(doc(db, "shops", shop.id), { updatedAt: new Date() });
-                                alert("완료!"); closeSelectModal();
-                            } catch(err) { alert("오류: " + err.message); }
-                        }
-                    };
-                    div.appendChild(promoteBtn); 
-                }
-                el.appendChild(div);
-            });
-            $('#selectModal').addClass('show');
+        // 3. 마커 다시 그리기
+        renderMarkers(filteredShops);
+
+        // 4. 검색 결과가 있으면 첫 번째 가게로 지도 부드럽게 이동
+        if (filteredShops.length > 0) {
+            const target = filteredShops[0];
+            if (target.lat && target.lng) {
+                const moveLatLng = new naver.maps.LatLng(target.lat, target.lng);
+                
+                // map.panTo보다 부드러운 morph 사용 (줌 레벨 17로 확대)
+                map.morph(moveLatLng, 17); 
+            }
+        } else {
+            // 검색 결과가 없을 때 (선택사항: 알림 등)
+            // alert("검색 결과가 없습니다."); 
         }
+
+        // 5. 모바일 키보드 닫기
+        $(this).blur();
+    }
+});
 
         function openEditModal(d) {
             $('#shopId').val(d.id); $('#shopName').val(d.name); $('#shopRegion').val(d.region); 

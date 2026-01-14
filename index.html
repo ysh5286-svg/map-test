@@ -47,7 +47,7 @@
             </div>
             <div class="search-input-row">
                 <span class="search-icon">🔍</span>
-                <input type="text" id="keyword" class="search-input" placeholder="예: 동성로 두바이 (띄어쓰기로 교차검색)" onkeyup="applyAllFilters()">
+                <input type="text" id="keyword" class="search-input" placeholder="예: 동성로 두바이" onchange="applyAllFilters()">
             </div>
         </div>
     </div>
@@ -220,16 +220,21 @@
     </script>
 
     <script type="module">
-        import { db, initMap, createMarker } from "./common.js";
-        import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // index.html 내의 <script type="module"> 내부 로직 수정
 
-        var map = initMap();
-        let allShops = [];
-        let markerList = [];
+import { db, initMap, createMarker } from "./common.js";
+import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        window.addEventListener('resize', function() { map.refresh(); updateVisibleMarkers(); });
-        setTimeout(function() { map.refresh(); updateVisibleMarkers(); }, 500);
-        setTimeout(function() { map.refresh(); updateVisibleMarkers(); }, 1500);
+var map = initMap();
+let allShops = [];
+let markerList = [];
+
+// [최적화 1] 디바운싱: 지도를 움직일 때마다 즉시 계산하지 않고, 멈추고 0.1초 뒤에 계산 (버벅임 방지)
+let resizeTimer;
+window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { map.refresh(); updateVisibleMarkers(); }, 100);
+});
 
         // ... (랜드마크 변수 LANDMARKS 기존 유지 - 코드 길이상 생략하지만 꼭 있어야 함) ...
         const LANDMARKS = {
@@ -301,20 +306,69 @@
                 select.appendChild(allOpt);
             }
         }
-        initTheme(); // 실행
+        // ▼▼▼ [여기서부터 붙여넣은 코드 시작] ▼▼▼
 
-        if(db) {
-            getDocs(collection(db, "shops")).then((snapshot) => {
-                allShops = [];
-                snapshot.forEach((doc) => allShops.push({ id: doc.id, ...doc.data() }));
-                
-                updateVisibleMarkers();
-                document.getElementById('loadingOverlay').classList.add('fade-out');
-            }).catch(e => {
-                console.error("Error:", e);
-                document.getElementById('loadingOverlay').classList.add('fade-out');
-            });
+    // [최적화 2] 로컬 스토리지 캐싱 시스템 도입
+    const CACHE_KEY = "dazzle_shops_data_v1"; 
+    const CACHE_EXPIRE_TIME = 1000 * 60 * 60 * 24; 
+
+    async function loadShopsData() {
+        // 1. 저장된 캐시 데이터 확인
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        const cachedTime = localStorage.getItem(CACHE_KEY + "_time");
+        const now = new Date().getTime();
+        
+        let isCacheUsed = false;
+
+        if (cachedData && cachedTime) {
+            allShops = JSON.parse(cachedData);
+            updateVisibleMarkers();
+            document.getElementById('loadingOverlay').classList.add('fade-out');
+            isCacheUsed = true;
+            console.log("🚀 캐시 데이터로 즉시 로딩 완료 (" + allShops.length + "개)");
         }
+
+        // 2. 파이어베이스에서 최신 데이터 가져오기
+        if(db) {
+            try {
+                const snapshot = await getDocs(collection(db, "shops"));
+                const newShops = [];
+                snapshot.forEach((doc) => newShops.push({ id: doc.id, ...doc.data() }));
+                
+                if (!isCacheUsed || JSON.stringify(newShops) !== cachedData) {
+                    allShops = newShops;
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(allShops));
+                    localStorage.setItem(CACHE_KEY + "_time", now);
+                    updateVisibleMarkers();
+                    if(!isCacheUsed) document.getElementById('loadingOverlay').classList.add('fade-out');
+                    console.log("🔄 최신 데이터로 업데이트 완료");
+                }
+            } catch (e) {
+                console.error("데이터 로딩 실패:", e);
+                if(!isCacheUsed) document.getElementById('loadingOverlay').classList.add('fade-out');
+            }
+        }
+    }
+
+    // 초기 실행
+    initTheme();
+    loadShopsData(); 
+
+    // [최적화 3] 지도 이동 시 'idle' 이벤트 디바운싱
+    let idleTimer;
+    naver.maps.Event.addListener(map, 'idle', function() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(updateVisibleMarkers, 150); 
+    });
+
+    // ▲▲▲ [여기까지 붙여넣은 코드 끝] ▲▲▲
+
+
+    // ... (아래 updateVisibleMarkers 함수 등은 그대로 두세요) ...
+    function updateVisibleMarkers() {
+        // ...
+    }
+</script>
 
         naver.maps.Event.addListener(map, 'idle', updateVisibleMarkers);
 
@@ -349,21 +403,54 @@
             }, () => { alert("위치 정보를 가져올 수 없습니다."); if(btnText) btnText.innerText = "내 주변"; });
         }
 
-        $('#keyword').on('keydown', function(e) {
-            if (e.key === 'Enter') {
-                const query = $(this).val().replace(/\s+/g, '');
-                if(!query) return;
-                for (const key in LANDMARKS) {
-                    if (query.includes(key)) {
-                        const coords = LANDMARKS[key];
-                        map.setCenter(new naver.maps.LatLng(coords.lat, coords.lng));
-                        map.setZoom(15);
-                        return;
-                    }
-                }
-                searchAddressToCoordinate($(this).val().trim());
+        
+$('#keyword').on('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const rawVal = $(this).val().trim();
+        // 비교를 위해 공백 제거 및 소문자 변환
+        const query = rawVal.replace(/\s+/g, '').toLowerCase();
+        
+        if(!query) return;
+
+        // 1. 랜드마크 검색 (기존 로직 유지)
+        for (const key in LANDMARKS) {
+            if (query.includes(key)) {
+                const coords = LANDMARKS[key];
+                map.setCenter(new naver.maps.LatLng(coords.lat, coords.lng));
+                map.setZoom(15);
+                
+                // 키보드 내리기 (모바일 편의성)
+                $(this).blur();
+                return;
             }
+        }
+
+        // 2. [추가됨] 내 데이터(allShops)에서 가게 이름 검색
+        // 검색어가 가게 이름에 포함되어 있는지 확인 (가장 먼저 발견된 가게로 이동)
+        const targetShop = allShops.find(shop => {
+            if(!shop.name) return false;
+            const shopName = shop.name.replace(/\s+/g, '').toLowerCase();
+            return shopName.includes(query);
         });
+
+        if (targetShop && targetShop.lat && targetShop.lng) {
+            // 찾은 가게 좌표로 부드럽게 이동
+            const loc = new naver.maps.LatLng(targetShop.lat, targetShop.lng);
+            
+            // morph: 부드러운 이동 / setCenter: 즉시 이동
+            map.morph(loc, 17); // 줌 레벨 17로 확대하며 이동
+            
+            // 키보드 내리기
+            $(this).blur();
+            return; // 가게를 찾았으므로 주소 검색 API 호출 중단
+        }
+
+        // 3. 주소 검색 (네이버 API - 기존 로직 유지)
+        // 가게 이름이 없을 경우 주소나 지역명으로 검색 시도
+        searchAddressToCoordinate(rawVal);
+        $(this).blur();
+    }
+});
 
         function searchAddressToCoordinate(query, isRetry = false) {
             naver.maps.Service.geocode({ query: query }, function(status, response) {

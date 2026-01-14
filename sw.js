@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dazzle-map-v1.8'; // 버전 조금 올림 (새로 적용되라고)
+const CACHE_NAME = 'dazzle-map-v1.9'; // 버전 조금 올림 (새로 적용되라고)
 
 // 🔥 캐시할 파일 목록 (외부 라이브러리도 포함해야 빨라짐)
 const urlsToCache = [

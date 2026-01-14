@@ -57,12 +57,16 @@ export function createMarker(map, shopList, onClick) {
     // 겹친 가게 뱃지 (+N)
     var badgeHtml = shopList.length > 1 ? `<span class="count-badge" style="background:${pointColor}">+${shopList.length - 1}</span>` : '';
 
-    // 🔥 마커 HTML (테두리와 글자색에 pointColor 적용)
-    // hover시 색상 반전 효과를 위해 CSS transition 추가
+// 🔥 최적화: transform 사용 명시 및 불필요한 그림자 연산 최소화
     var contentHtml = `
-        <div class="marker-label" style="border: 2px solid ${pointColor};">
+        <div class="marker-label" style="
+            border: 2px solid ${pointColor};
+            will-change: transform; 
+            transform: translate(-50%, -100%);">
+            
             <span class="overlay-badge" style="color: ${pointColor};">${categoryName}</span>
             <span class="overlay-name">${mainShop.name} ${badgeHtml}</span>
+            
             <div style="
                 position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
                 width: 0; height: 0; 
