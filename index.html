@@ -151,21 +151,28 @@
     </div>
 
     <div id="infoPanel" class="info-panel">
-        <div class="panel-header" id="panelHeader"><button class="panel-close" onclick="closePanel()">✕</button></div>
+        <div class="panel-header" id="panelHeader">
+            <button class="panel-close" onclick="closePanel()">✕</button>
+            </div>
         <div class="panel-body">
-            <div><h2 class="panel-title" id="panelTitle">가게 이름</h2><div class="panel-meta" id="panelMeta"></div></div>
+            <div>
+                <h2 class="panel-title" id="panelTitle">가게 이름</h2>
+                <div class="panel-meta" id="panelMeta"></div>
+            </div>
+
             <div class="rating-box">
-                <div class="rating-left"><div class="total-score" id="panelTotal">0.0</div><div class="total-label">총점</div></div>
-                <div class="rating-grid">
-                    <div class="detail-score"><span>맛</span> <div class="progress-bg"><div id="barTaste" class="progress-bar"></div></div></div>
-                    <div class="detail-score"><span>가성비</span> <div class="progress-bg"><div id="barValue" class="progress-bar"></div></div></div>
-                    <div class="detail-score"><span>분위기</span> <div class="progress-bg"><div id="barMood" class="progress-bar"></div></div></div>
-                    <div class="detail-score"><span>친절도</span> <div class="progress-bg"><div id="barKind" class="progress-bar"></div></div></div>
+                <div class="rating-top">
+                    <span class="total-star">⭐</span>
+                    <div class="total-score" id="panelTotal">0.0</div>
+                </div>
+                <div class="review-text" id="panelReview">
+                    🗨️ "사장님의 소개글이 없습니다."
                 </div>
             </div>
+
             <div class="info-row"><span class="info-label">메뉴</span> <span class="info-text" id="panelMenu"></span></div>
             <div class="info-row"><span class="info-label">주소</span> <span class="info-text" id="panelAddr"></span></div>
-            <div class="info-row"><span class="info-label">설명</span> <span class="info-text" id="panelDesc"></span></div>
+            
             <a href="#" id="panelLink" target="_blank" class="panel-btn">네이버 플레이스 보기</a>
         </div>
     </div>
@@ -217,7 +224,76 @@
         function drawRoulette(){ if(!rCanvas)return; const n=currentFoods.length; if(n===0){ rCtx.clearRect(0,0,rCanvas.width,rCanvas.height); return; } const arc=(2*Math.PI)/n,dpr=window.devicePixelRatio||1,rect=rCanvas.getBoundingClientRect(); rCanvas.width=rect.width*dpr; rCanvas.height=rect.height*dpr; rCtx.scale(dpr,dpr); const r=rect.width/2; rCtx.clearRect(0,0,rect.width,rect.height); for(let i=0;i<n;i++){ const a=i*arc-Math.PI/2; rCtx.beginPath(); rCtx.moveTo(r,r); rCtx.arc(r,r,r,a,a+arc); rCtx.fillStyle=colors[i%colors.length]; rCtx.fill(); rCtx.stroke(); rCtx.save(); rCtx.translate(r,r); rCtx.rotate(a+arc/2); rCtx.textAlign="right"; rCtx.fillStyle="#333"; const fs=Math.max(12,Math.min(24,200/n)); rCtx.font=`bold ${fs}px 'Noto Sans KR'`; rCtx.fillText(currentFoods[i],r-20,5); rCtx.restore(); } }
         window.spinRoulette=function(){ if(isSpinning)return; if(currentFoods.length<2){ alert("메뉴 2개 이상 필요!"); return; } isSpinning=true; document.getElementById('spinBtn').innerText="...DoRoRo..."; const r=Math.floor(Math.random()*360); rCurrentRotation+=(360*5+r); rCanvas.style.transition="transform 4s cubic-bezier(0.25,0.1,0.25,1)"; rCanvas.style.transform=`rotate(${rCurrentRotation}deg)`; setTimeout(()=>{ isSpinning=false; document.getElementById('spinBtn').innerText="돌려 돌려! START"; fireConfetti(); },4000); }
         function fireConfetti(){ const c=['#f00','#0f0','#00f','#ff0','#0ff']; for(let i=0;i<50;i++){ const d=document.createElement('div'); d.className='confetti'; d.style.left=Math.random()*100+'vw'; d.style.top='-10px'; d.style.backgroundColor=c[Math.floor(Math.random()*c.length)]; d.style.animationDuration=(Math.random()*2+2)+'s'; document.body.appendChild(d); setTimeout(()=>d.remove(),4000); } }
-    </script>
+    
+
+// ==========================================
+        // 📌 [누락된 함수 추가] 마커 클릭 시 정보창 띄우기
+        // ==========================================
+        
+        // 1. 상세 정보 패널 열기 (업데이트됨)
+        window.showPanel = function(shop) {
+            // 기본 텍스트
+            document.getElementById('panelTitle').innerText = shop.name;
+            document.getElementById('panelTitle').innerText = shop.name;
+    
+    // 🔥 [수정] 평점 옆에 '/5.0'을 작은 글씨로 추가
+    // innerText 대신 innerHTML을 써야 <span> 태그가 먹힙니다.
+    const score = shop.totalScore || "0.0";
+    document.getElementById('panelTotal').innerHTML = `${score}<span class="total-max"> / 5.0</span>`;
+
+    document.getElementById('panelMenu').innerText = shop.menu || "-";
+            document.getElementById('panelMenu').innerText = shop.menu || "-";
+            document.getElementById('panelAddr').innerText = shop.address || "-";
+            
+            // 🔥 [수정] 한줄평 (desc 필드 사용)
+            // 데이터가 없으면 기본 멘트 출력
+            const reviewHtml = shop.desc ? `🗨️ "${shop.desc}"` : `🗨️ "아직 등록된 한줄평이 없어요."`;
+            document.getElementById('panelReview').innerHTML = reviewHtml;
+            
+            // 메타 태그
+            const metaBox = document.getElementById('panelMeta');
+            let metaHtml = '';
+            if(shop.category) (Array.isArray(shop.category) ? shop.category : [shop.category]).forEach(c => metaHtml += `<span class="panel-tag">#${c}</span>`);
+            if(shop.purpose) (Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose]).forEach(p => metaHtml += `<span class="panel-tag">#${p}</span>`);
+            metaBox.innerHTML = metaHtml;
+
+            // 🔥 [추가] 이미지 & 주차 뱃지 처리
+            const header = document.getElementById('panelHeader');
+            
+            // 배경 이미지
+            if (shop.imageUrl) {
+                header.style.backgroundImage = `url('${shop.imageUrl}')`;
+            } else {
+                header.style.backgroundImage = 'none';
+                header.style.backgroundColor = '#ddd';
+            }
+
+            // 주차 뱃지 생성 (HTML 주입)
+            // 기존 닫기 버튼은 유지해야 하므로 innerHTML로 같이 넣어줍니다.
+            let parkingBadge = '';
+            if (shop.parking) {
+                // 주차 상태에 따라 텍스트/아이콘이 데이터에 이미 포함되어 있다고 가정 (예: "🅿️ 주차장 완비")
+                parkingBadge = `<div class="parking-badge">${shop.parking}</div>`;
+            }
+            header.innerHTML = `<button class="panel-close" onclick="closePanel()">✕</button>${parkingBadge}`;
+
+            // 네이버 링크
+            const btnLink = document.getElementById('panelLink');
+            if (shop.link) {
+                btnLink.href = shop.link;
+                btnLink.style.display = 'block';
+                btnLink.innerText = '네이버 플레이스 보기';
+            } else {
+                btnLink.href = '#';
+                btnLink.style.display = 'none';
+            }
+
+            // 패널 열기
+            document.getElementById('faqPanel').classList.remove('show');
+            document.getElementById('selectModal').classList.remove('show');
+            document.getElementById('infoPanel').classList.add('show');
+        }
+        </script>
 
     <script type="module">
     import { db, initMap, createMarker } from "./common.js";
@@ -538,8 +614,31 @@
         }, () => { alert("위치 정보를 가져올 수 없습니다."); if(btnText) btnText.innerText = "내 주변"; });
     }
 
-    // PWA 로직 (기존 유지)
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(err => console.log('서비스 워커 실패', err));
+    
+  // PWA 로직 수정
+    if ('serviceWorker' in navigator) {
+        // 🔥 [수정] new Date().getTime()을 지우고, 직접 버전 숫자를 적어주세요.
+        // 나중에 업데이트할 때만 이 숫자를 v=2.2 -> v=2.3 처럼 바꿔주시면 됩니다.
+        navigator.serviceWorker.register('./sw.js?v=2.2') 
+            .then(reg => {
+                console.log('서비스 워커 등록 완료:', reg);
+                
+                reg.onupdatefound = () => {
+                    const installingWorker = reg.installing;
+                    installingWorker.onstatechange = () => {
+                        if (installingWorker.state === 'installed') {
+                            if (navigator.serviceWorker.controller) {
+                                // 이제 버전이 고정되었으므로, 진짜 업데이트 때만 이 코드가 실행됩니다.
+                                console.log('새로운 업데이트가 있어 새로고침합니다.');
+                                window.location.reload(); 
+                            }
+                        }
+                    };
+                };
+            })
+            .catch(err => console.log('서비스 워커 실패', err));
+        }
+
     let deferredPrompt; const installBtn = document.getElementById('installBtn'); const ua = navigator.userAgent.toLowerCase(); const isIos = /iphone|ipad|ipod/.test(ua); const isInApp = ua.includes('kakao') || ua.includes('instagram') || ua.includes('naver');
     if (isIos) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("📲 아이폰 설치 방법\n\n1. 사파리(Safari) 브라우저 하단 '공유' 버튼 클릭\n2. 메뉴를 내려서 '홈 화면에 추가' 선택\n3. 바탕화면에 '대구핫플여기' 앱 생성!")); } 
     else if (isInApp) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("🚫 현재 브라우저에서는 다운로드가 제한됩니다.\n\n우측 하단(또는 상단)의 [더보기 ···] 버튼을 누르고\n[다른 브라우저로 열기]를 선택해주세요!")); }

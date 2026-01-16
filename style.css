@@ -54,7 +54,6 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Noto Sans KR', s
 .panel-title { font-size: 20px; font-weight: bold; margin: 0; color: #222; word-break: keep-all; }
 .panel-meta { display: flex; flex-wrap: wrap; gap: 6px; }
 .panel-tag { background: #f1f3f5; padding: 3px 8px; border-radius: 4px; color: #495057; font-size: 12px; }
-.rating-box { background: #fff9db; padding: 10px; border-radius: 8px; border: 1px solid #ffe066; display: flex; align-items: center; gap: 15px; }
 .rating-left { text-align: center; min-width: 60px; }
 .total-score { font-size: 26px; font-weight: bold; color: #f59f00; margin: 0; line-height: 1; }
 .total-label { font-size: 11px; color: #888; }
@@ -292,3 +291,152 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Noto Sans KR', s
 }
 .toast-msg.show { opacity: 1; }
 
+
+/* --- [수정] 상세 패널 디자인 업데이트 --- */
+
+/* 1. 이미지 위 주차 뱃지 (왼쪽 하단) */
+.panel-header {
+    position: relative; /* 뱃지 위치 기준점 */
+}
+.parking-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.75); /* 반투명 검정 배경 */
+    color: white;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 5;
+}
+
+/* 2. 평점 박스 심플하게 변경 (총점 + 한줄평) */
+.rating-box {
+    background: #fff9db;
+    padding: 20px 15px; /* 여백 넉넉하게 */
+    border-radius: 12px;
+    border: 1px solid #ffe066;
+    display: flex;
+    flex-direction: column; /* 세로 정렬 */
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+/* 별점 스타일 */
+.rating-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.total-score {
+    font-size: 36px !important; /* 글자 크기 키움 */
+    font-weight: 900 !important;
+    color: #f59f00;
+    margin: 0;
+    line-height: 1;
+    letter-spacing: -1px;
+}
+.total-star {
+    font-size: 32px;
+    color: #f59f00;
+}
+
+/* 한줄평 스타일 */
+.review-text {
+    font-size: 14px;
+    color: #495057;
+    font-weight: bold;
+    line-height: 1.5;
+    word-break: keep-all;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 8px 12px;
+    border-radius: 8px;
+    width: 100%;
+}
+
+/* ... (기존 CSS 맨 아래에 추가) ... */
+
+/* 🔥 [NEW] 핫플 마커 스타일 */
+.hot-marker {
+    border-width: 3px !important;     /* 테두리 굵게 */
+    border-color: #e74c3c !important; /* 강렬한 빨간색 테두리 강제 적용 */
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.6) !important; /* 붉은색 그림자(빛나는 효과) */
+    z-index: 9999 !important;         /* 다른 마커보다 무조건 위에 */
+    transform: translate(-50%, -105%) scale(1.1) !important; /* 살짝 더 크고 위로 */
+}
+
+.hot-marker .overlay-name {
+    font-weight: 900 !important;      /* 글자 더 굵게 */
+    color: #c0392b !important;        /* 글자색도 진한 빨강 */
+    font-size: 14px !important;       /* 글자 약간 키움 */
+}
+
+/* 화살표 꼬리 색상도 빨갛게 */
+.hot-marker > div {
+    border-top-color: #e74c3c !important;
+}
+
+/* ... 기존 코드 아래에 추가 ... */
+
+/* 🔥 핫플 마커 본체 */
+.hot-marker {
+    border-width: 3px !important;     /* 테두리 굵게 */
+    border-color: #e74c3c !important; /* 무조건 빨간색 테두리 */
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.5) !important; /* 붉은 빛남 효과 */
+    margin-top: -5px; /* 살짝 더 위로 띄움 */
+}
+
+/* 🔥 [핵심] 상단 중앙 왕관 불꽃 스타일 */
+.hot-fire-crown {
+    position: absolute;
+    top: -35px;           /* 마커 박스보다 훨씬 위로 올림 */
+    left: 50%;            /* 가로 중앙 정렬 시작 */
+    transform: translateX(-50%); /* 정확히 가운데로 맞춤 */
+    
+    font-size: 36px;      /* 🔥 불꽃 크기 대폭 확대! (원하는 만큼 숫자 키우세요) */
+    line-height: 1;
+    z-index: 20;
+    
+    /* 불꽃에 그림자 줘서 더 잘 보이게 */
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+    
+    /* (선택사항) 불꽃이 살랑살랑 움직이는 애니메이션 */
+    animation: fire-bounce 1.5s infinite ease-in-out;
+}
+
+/* 핫플은 글자도 더 진하게 */
+.hot-marker .overlay-name {
+    font-weight: 900 !important;
+    color: #c0392b !important;
+    font-size: 15px !important;
+}
+
+/* 핫플 마커의 화살표 꼬리도 빨간색으로 */
+.hot-marker > div {
+    border-top-color: #e74c3c !important;
+}
+
+/* 불꽃 움직임 애니메이션 */
+@keyframes fire-bounce {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.15); } /* 커졌다 작아졌다 함 */
+}
+
+/* style.css 맨 아래에 추가 */
+
+/* 평점 옆 기준 점수 (/5.0) 스타일 */
+.total-max {
+    font-size: 16px;       /* 메인 점수보다 작게 (메인은 36px임) */
+    color: #ffd43b;        /* 연한 노란색 (가독성 고려한 골드 옐로우) */
+    font-weight: 500;      /* 두께는 보통 */
+    margin-left: 4px;      /* 점수와 살짝 띄우기 */
+    vertical-align: bottom; /* 바닥 라인 맞추기 */
+}

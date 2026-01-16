@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 1. 파이어베이스 설정 (기존과 동일)
+// 1. 파이어베이스 설정
 const firebaseConfig = {
     apiKey: "AIzaSyBjzTIUtmGRVPXRy8Qppta1O2C1FjAvmeE",
     authDomain: "dazzle-map-dd970.firebaseapp.com",
@@ -15,7 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// 2. 지도 초기화 (기존과 동일)
+// 2. 지도 초기화
 export function initMap() {
     return new naver.maps.Map('map', {
         center: new naver.maps.LatLng(35.8693, 128.5955), // 반월당 기준
@@ -25,7 +25,7 @@ export function initMap() {
     });
 }
 
-// 🔥 [NEW] 업종별 색상 팔레트
+// 🔥 [색상 팔레트] (중복 선언 오류 해결됨!)
 const categoryColors = {
     "한식": "#e74c3c",       // 빨강
     "중식": "#f39c12",       // 주황
@@ -43,27 +43,34 @@ const categoryColors = {
     "default": "#34495e"     // 기본값 (진한 남색)
 };
 
-// 3. 마커 생성 함수 (색상 적용)
+// 3. 마커 생성 함수 (🔥 불꽃 중앙 상단 배치 적용됨)
 export function createMarker(map, shopList, onClick) {
     if (!shopList || shopList.length === 0) return null;
 
-    // 대표 가게 정보
     var mainShop = shopList[0];
     var categoryName = Array.isArray(mainShop.category) ? mainShop.category[0] : (mainShop.category || '맛집');
-    
-    // 🔥 색상 결정 (팔레트에 없으면 기본값 사용)
     var pointColor = categoryColors[categoryName] || categoryColors["default"];
 
-    // 겹친 가게 뱃지 (+N)
+    // 겹친 가게 뱃지
     var badgeHtml = shopList.length > 1 ? `<span class="count-badge" style="background:${pointColor}">+${shopList.length - 1}</span>` : '';
 
-// 🔥 최적화: transform 사용 명시 및 불필요한 그림자 연산 최소화
+    // 🔥 [디자인 변경] 핫플인지 확인
+    var isHot = mainShop.isHot === true;
+    
+    // 핫플이면 CSS 클래스 추가
+    var hotClass = isHot ? 'hot-marker' : '';
+
+    // 🔥 [핵심] 불꽃 아이콘 (CSS로 위치 잡음)
+    var fireIconHtml = isHot ? `<div class="hot-fire-crown">🔥</div>` : '';
+
     var contentHtml = `
-        <div class="marker-label" style="
-            border: 2px solid ${pointColor};
+        <div class="marker-label ${hotClass}" style="
+            border: 2px solid ${pointColor}; 
             will-change: transform; 
             transform: translate(-50%, -100%);">
             
+            ${fireIconHtml}
+
             <span class="overlay-badge" style="color: ${pointColor};">${categoryName}</span>
             <span class="overlay-name">${mainShop.name} ${badgeHtml}</span>
             
@@ -83,11 +90,13 @@ export function createMarker(map, shopList, onClick) {
         icon: {
             content: contentHtml,
             size: new naver.maps.Size(0, 0),
-            anchor: new naver.maps.Point(0, 0) // 중심점 잡기
-        }
+            anchor: new naver.maps.Point(0, 0)
+        },
+        // 핫플이면 다른 마커보다 무조건 위에 보이게 (Z-index 높임)
+        zIndex: isHot ? 9999 : 100 
     });
 
-if (onClick) {
+    if (onClick) {
         naver.maps.Event.addListener(marker, 'click', function(e) {
             onClick(shopList); 
         });
