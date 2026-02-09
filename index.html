@@ -295,7 +295,8 @@
 
     <script type="module">
         import { db, initMap, createMarker, auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged } from "./common.js";
-    import { collection, getDocs, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    // 🔥 [수정됨] arrayUnion, arrayRemove 추가됨 (좋아요 기능용)
+    import { collection, getDocs, doc, getDoc, setDoc, updateDoc, increment, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     var map = initMap();
     let allShops = [];
@@ -309,7 +310,7 @@
         resizeTimer = setTimeout(() => { map.refresh(); updateVisibleMarkers(); }, 100);
     });
 
-    // 랜드마크 정의
+    // 랜드마크
     const LANDMARKS = {
         "팔공산": { lat: 35.9899, lng: 128.6961 }, "갓바위": { lat: 35.9758, lng: 128.7694 },
         "반월당": { lat: 35.8644, lng: 128.5933 }, "동성로": { lat: 35.8710, lng: 128.5960 },
@@ -328,7 +329,6 @@
         closePanel(); document.getElementById('faqPanel').classList.remove('show');
     });
 
-    // 데이터 로드
     async function loadShopsData() {
         const cachedData = localStorage.getItem(CACHE_KEY);
         const cachedTime = localStorage.getItem(CACHE_KEY + "_time");
@@ -381,7 +381,6 @@
             const allOpt = document.createElement('option'); allOpt.value = "ALL"; allOpt.innerText = "📂 전체 맛집 보기"; select.appendChild(allOpt); 
             if (select.options.length === 1) select.value = "ALL";
         } catch(e) {
-            console.log("테마 로딩 실패:", e);
             if(select.options.length === 0) {
                 const allOpt = document.createElement('option'); allOpt.value = "ALL"; allOpt.innerText = "📂 전체 맛집 보기"; select.appendChild(allOpt); select.value = "ALL";
             }
@@ -423,9 +422,11 @@
         });
         for(const key in groups) {
             groups[key].sort((a, b) => {
-                const dateA = a.updatedAt ? (a.updatedAt.seconds || 0) : 0;
-                const dateB = b.updatedAt ? (b.updatedAt.seconds || 0) : 0;
-                return dateB - dateA;
+                // 1순위: 좋아요 많은 순, 2순위: 최신순
+                const likeA = (a.likedBy || []).length;
+                const likeB = (b.likedBy || []).length;
+                if(likeB !== likeA) return likeB - likeA;
+                return (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0);
             });
             const marker = createMarker(map, groups[key], function(clickedList) {
                 if (clickedList.length === 1) showPanel(clickedList[0]);
@@ -526,20 +527,16 @@
         }, () => { alert("위치 정보를 가져올 수 없습니다."); if(btnText) btnText.innerText = "내 주변"; });
     }
 
-    // PWA 등록
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=2.5') 
+        navigator.serviceWorker.register('./sw.js?v=2.7') 
             .then(reg => {
                 reg.onupdatefound = () => {
                     const installingWorker = reg.installing;
                     installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed') {
-                            if (navigator.serviceWorker.controller) { window.location.reload(); }
-                        }
+                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) { window.location.reload(); }
                     };
                 };
-            })
-            .catch(err => console.log('서비스 워커 실패', err));
+            }).catch(err => console.log('서비스 워커 실패', err));
     }
 
     let deferredPrompt; const installBtn = document.getElementById('installBtn'); const ua = navigator.userAgent.toLowerCase(); const isIos = /iphone|ipad|ipod/.test(ua); const isInApp = ua.includes('kakao') || ua.includes('instagram') || ua.includes('naver');
@@ -548,7 +545,7 @@
     else { window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; }); installBtn.addEventListener('click', (e) => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') installBtn.style.display = 'none'; deferredPrompt = null; }); } else alert("이미 설치됨"); }); }
 
     // ==========================================
-    // 🔥 로그인 & 레벨업 시스템 (auth 연동)
+    // 인증 시스템
     // ==========================================
     window.googleLogin = function() {
         const ua = navigator.userAgent.toLowerCase();
@@ -557,14 +554,11 @@
             alert("🔒 보안 정책상 카카오톡/인스타그램 브라우저에서는 \n구글 로그인이 제한됩니다.\n\n[해결 방법]\n우측 하단(또는 상단)의 [더보기 ···] 버튼을 누르고\n[다른 브라우저로 열기]를 선택해주세요! 🌍");
             return;
         }
-        signInWithPopup(auth, googleProvider)
-            .then((result) => { checkUserDB(result.user); }).catch((error) => { alert("로그인 실패: " + error.message); });
+        signInWithPopup(auth, googleProvider).then((result) => { checkUserDB(result.user); }).catch((error) => { alert("로그인 실패: " + error.message); });
     };
 
     window.googleLogout = function() {
-        if(confirm("로그아웃 하시겠습니까?")) {
-            signOut(auth).then(() => { alert("로그아웃 되었습니다."); location.reload(); });
-        }
+        if(confirm("로그아웃 하시겠습니까?")) { signOut(auth).then(() => { alert("로그아웃 되었습니다."); location.reload(); }); }
     };
 
     onAuthStateChanged(auth, async (user) => {
@@ -596,53 +590,73 @@
 
     function calculateLevel(exp) { return 1 + Math.floor(exp / 10); }
 
-    // ==========================================
-    // 🚀 [추가됨] GPS 기반 위치 인증 시스템
-    // ==========================================
-    
-    // 1. 거리 계산 함수 (Haversine 공식)
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-        var R = 6371; // 지구 반지름 (km)
-        var dLat = deg2rad(lat2-lat1);
-        var dLon = deg2rad(lon2-lon1); 
-        var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat1)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+        var R = 6371; var dLat = deg2rad(lat2-lat1); var dLon = deg2rad(lon2-lon1); 
+        var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat1)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
         var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-        var d = R * c; 
-        return d * 1000; // 미터로 반환
+        return R * c * 1000;
     }
     function deg2rad(deg) { return deg * (Math.PI/180); }
 
-    // 2. GPS 인증 실행 함수 (전역 연결)
+    // ==========================================
+    // 🚀 [최종 수정] GPS + 쿨타임(1시간) 인증 시스템
+    // ==========================================
     window.verifyVisitByGPS = function(shopLat, shopLng, shopName) {
-        // 로그인 체크
         const user = auth.currentUser;
         if(!user) return alert("로그인 후 인증할 수 있습니다! 😅");
 
+        const btn = event.target; 
+        const originalText = btn.innerHTML;
+        
+        // 1. 쿨타임 체크 (DB 확인)
+        const userRef = doc(db, "users", user.uid);
+        
+        // DB에서 유저 정보를 먼저 가져옴
+        getDoc(userRef).then((docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const lastTime = data.lastCheckIn ? data.lastCheckIn.toMillis() : 0;
+                const now = new Date().getTime();
+                const diffMinutes = (now - lastTime) / (1000 * 60); // 분 단위 차이
+
+                // 🔥 [핵심] 60분 이내면 인증 막기
+                if (diffMinutes < 60) {
+                    const waitTime = 60 - Math.floor(diffMinutes);
+                    alert(`⛔ 아직 배부르지 않으세요?\n\n맛집 인증은 1시간에 한 번만 가능합니다!\n(남은 시간: 약 ${waitTime}분)`);
+                    return; // 함수 종료
+                }
+                
+                // 쿨타임 지났으면 GPS 확인 시작
+                startGPSCheck(userRef, shopLat, shopLng, shopName, btn, originalText);
+            }
+        });
+    }
+
+    function startGPSCheck(userRef, shopLat, shopLng, shopName, btn, originalText) {
         if (!navigator.geolocation) return alert("위치 정보를 사용할 수 없습니다. GPS를 켜주세요!");
         
-        const btn = event.target; // 클릭한 버튼
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "📡 위치 확인 중...";
+        btn.innerHTML = "📡 위치 확인 중..."; 
         btn.disabled = true;
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            const myLat = pos.coords.latitude;
+            const myLat = pos.coords.latitude; 
             const myLng = pos.coords.longitude;
             
             // 거리 계산
             const distance = getDistanceFromLatLonInKm(myLat, myLng, shopLat, shopLng);
             
-            // 💡 [인증 범위 설정] 150미터 이내면 인정 (GPS 오차 고려해서 넉넉하게)
-            if(distance < 150) {
-                // 성공! 경험치 지급 로직
-                const userRef = doc(db, "users", user.uid);
-                await updateDoc(userRef, { exp: increment(10) });
+            // 💡 [범위] 100m 이내 (조금 더 타이트하게)
+            if(distance < 100) {
+                // 성공! (경험치 +10 & 마지막 인증 시간 갱신)
+                await updateDoc(userRef, { 
+                    exp: increment(10),
+                    lastCheckIn: new Date() // 🔥 현재 시간을 기록 (다음 쿨타임 기준)
+                });
                 
-                alert(`🎉 인증 성공!\n[${shopName}] 방문을 환영합니다!\n경험치 +10 획득!`);
-                location.reload(); // 레벨업 반영을 위해 새로고침
+                alert(`🎉 인증 성공!\n[${shopName}] 방문 확인되었습니다.\n경험치 +10 획득! (맛있게 드세요!)`);
+                location.reload(); 
             } else {
-                alert(`😢 매장과 거리가 너무 멉니다.\n(현재 거리: 약 ${Math.round(distance)}m)\n\n매장에 도착해서 다시 시도해주세요!`);
+                alert(`😢 매장 근처가 아닙니다.\n(현재 거리: 약 ${Math.round(distance)}m)\n\n매장 안에 들어오셔서 다시 시도해주세요!`);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
@@ -650,15 +664,65 @@
             alert("위치 정보를 가져올 수 없습니다. 권한을 허용해주세요!");
             btn.innerHTML = originalText;
             btn.disabled = false;
-        }, {
-            enableHighAccuracy: true, // 높은 정확도 요구
-            timeout: 5000,
-            maximumAge: 0
-        });
+        }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
     }
 
     // ==========================================
-    // 📌 [수정됨] 상세 패널 열기 (GPS 버튼 추가)
+    // 🔥 [추가됨] 좋아요(하트) 기능 로직
+    // ==========================================
+    window.toggleLike = async function(shopId) {
+        const user = auth.currentUser;
+        if(!user) return alert("로그인이 필요한 기능입니다. 😅");
+
+        const heartBtn = document.getElementById('heartBtn');
+        const countSpan = document.getElementById('likeCountSpan');
+        const shopRef = doc(db, "shops", shopId);
+        
+        // 현재 상태 확인 (클래스로 판단)
+        const isLiked = heartBtn.innerText === "❤️";
+        
+        // 1. UI 즉시 반영 (Optimistic Update)
+        if(isLiked) {
+            heartBtn.innerText = "🤍";
+            heartBtn.classList.remove('active');
+            countSpan.innerText = parseInt(countSpan.innerText) - 1;
+        } else {
+            heartBtn.innerText = "❤️";
+            heartBtn.classList.add('active');
+            countSpan.innerText = parseInt(countSpan.innerText) + 1;
+        }
+
+        // 2. DB 업데이트 (백그라운드)
+        try {
+            if(isLiked) {
+                // 좋아요 취소: 내 ID 제거, 카운트 -1
+                await updateDoc(shopRef, {
+                    likedBy: arrayRemove(user.uid)
+                });
+            } else {
+                // 좋아요 추가: 내 ID 추가, 카운트 +1
+                await updateDoc(shopRef, {
+                    likedBy: arrayUnion(user.uid)
+                });
+            }
+            // 전체 데이터 최신화 (메모리만)
+            const target = allShops.find(s => s.id === shopId);
+            if(target) {
+                if(!target.likedBy) target.likedBy = [];
+                if(isLiked) target.likedBy = target.likedBy.filter(uid => uid !== user.uid);
+                else target.likedBy.push(user.uid);
+            }
+
+        } catch(e) {
+            console.error(e);
+            alert("오류가 발생했습니다.");
+            // 실패 시 UI 원상복구
+            heartBtn.innerText = isLiked ? "❤️" : "🤍";
+        }
+    }
+
+    // ==========================================
+    // 📌 [수정됨] 상세 패널 열기 (하트 + GPS)
     // ==========================================
     window.showPanel = function(shop) {
         document.getElementById('panelTitle').innerText = shop.name;
@@ -668,37 +732,53 @@
         document.getElementById('panelAddr').innerText = shop.address || "-";
         const reviewHtml = shop.desc ? `🗨️ "${shop.desc}"` : `🗨️ "아직 등록된 한줄평이 없어요."`;
         document.getElementById('panelReview').innerHTML = reviewHtml;
+        
         const metaBox = document.getElementById('panelMeta');
         let metaHtml = '';
         if(shop.category) (Array.isArray(shop.category) ? shop.category : [shop.category]).forEach(c => metaHtml += `<span class="panel-tag">#${c}</span>`);
         if(shop.purpose) (Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose]).forEach(p => metaHtml += `<span class="panel-tag">#${p}</span>`);
         metaBox.innerHTML = metaHtml;
+
         const header = document.getElementById('panelHeader');
         if (shop.imageUrl) { header.style.backgroundImage = `url('${shop.imageUrl}')`; } 
         else { header.style.backgroundImage = 'none'; header.style.backgroundColor = '#ddd'; }
+        
         let parkingBadge = '';
         if (shop.parking) { parkingBadge = `<div class="parking-badge">${shop.parking}</div>`; }
-        header.innerHTML = `<button class="panel-close" onclick="closePanel()">✕</button>${parkingBadge}`;
         
-        // 🔥 [네이버 링크 버튼]
+        // 🔥 [추가됨] 하트 버튼 생성
+        const user = auth.currentUser;
+        const likedList = shop.likedBy || [];
+        const isLiked = user && likedList.includes(user.uid);
+        const heartIcon = isLiked ? "❤️" : "🤍";
+        const likeCount = likedList.length;
+
+        const heartHtml = `
+            <div class="like-btn-wrapper">
+                <button id="heartBtn" class="heart-btn ${isLiked?'active':''}" onclick="toggleLike('${shop.id}')">${heartIcon}</button>
+                <span id="likeCountSpan" class="like-count">${likeCount}</span>
+            </div>
+        `;
+
+        // 헤더에 닫기 버튼 + 주차 뱃지 + 하트 버튼 다 넣기
+        header.innerHTML = `<button class="panel-close" onclick="closePanel()">✕</button>${parkingBadge}${heartHtml}`;
+
+        // GPS 버튼 & 네이버 링크
         const btnLink = document.getElementById('panelLink');
         if (shop.link) { btnLink.href = shop.link; btnLink.style.display = 'block'; btnLink.innerText = '네이버 플레이스 보기'; } 
         else { btnLink.href = '#'; btnLink.style.display = 'none'; }
 
-        // 🔥 [추가됨] GPS 인증 버튼 생성 (네이버 버튼 위에 추가)
-        // 기존 버튼이 있으면 지우고 새로 만듦
         const existingGpsBtn = document.getElementById('gpsAuthBtn');
         if(existingGpsBtn) existingGpsBtn.remove();
 
         const gpsBtn = document.createElement('button');
         gpsBtn.id = 'gpsAuthBtn';
         gpsBtn.className = 'panel-btn';
-        gpsBtn.style.background = '#e74c3c'; // 빨간색 포인트
+        gpsBtn.style.background = '#e74c3c';
         gpsBtn.style.marginTop = '10px';
         gpsBtn.innerHTML = '📍 <b>여기 왔어요! (GPS 인증)</b>';
         gpsBtn.onclick = function() { verifyVisitByGPS(shop.lat, shop.lng, shop.name); };
         
-        // 패널 바디의 맨 끝(네이버 버튼 위)에 추가
         const panelBody = document.querySelector('.panel-body');
         panelBody.insertBefore(gpsBtn, btnLink);
 

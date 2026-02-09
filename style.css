@@ -465,3 +465,29 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Noto Sans KR', s
 .lv2 { background-color: #2ecc71; } /* 초록 */
 .lv3 { background-color: #3498db; } /* 파랑 */
 .lv4 { background-color: #e74c3c; box-shadow: 0 2px 4px rgba(231,76,60,0.4); } /* 빨강(만렙) */
+
+/* 좋아요 하트 버튼 */
+.like-btn-wrapper {
+    position: absolute;
+    top: 15px; right: 50px; /* 닫기 버튼 옆에 배치 */
+    display: flex; flex-direction: column; align-items: center;
+    z-index: 20;
+}
+.heart-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 28px; line-height: 1; transition: transform 0.2s;
+    padding: 0; margin: 0; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+}
+.heart-btn:active { transform: scale(0.8); }
+.heart-btn.active { animation: heartBeat 0.3s ease-in-out; }
+.like-count {
+    font-size: 11px; font-weight: bold; color: white;
+    background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 10px;
+    margin-top: 2px;
+}
+
+@keyframes heartBeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
