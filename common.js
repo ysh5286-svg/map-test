@@ -39,20 +39,38 @@ const categoryColors = {
     "포장/배달": "#95a5a6", "default": "#34495e"
 };
 
-// 3. 마커 생성 함수
+// 3. 마커 생성 함수 (태깅 체크 기능 추가됨)
 export function createMarker(map, shopList, onClick) {
     if (!shopList || shopList.length === 0) return null;
     var mainShop = shopList[0];
+    
+    // 카테고리 색상
     var categoryName = Array.isArray(mainShop.category) ? mainShop.category[0] : (mainShop.category || '맛집');
     var pointColor = categoryColors[categoryName] || categoryColors["default"];
+    
+    // 뱃지 (+1 같은거)
     var badgeHtml = shopList.length > 1 ? `<span class="count-badge" style="background:${pointColor}">+${shopList.length - 1}</span>` : '';
+    
+    // 🔥 핫플 & 태깅 여부 확인
     var isHot = mainShop.isHot === true;
-    var hotClass = isHot ? 'hot-marker' : '';
-    var fireIconHtml = isHot ? `<div class="hot-fire-crown">🔥</div>` : '';
+    var isTagged = mainShop.isTagged === true; // (관리자 모드에서 주입됨)
+
+    var markerClass = '';
+    var iconHtml = '';
+
+    // 스타일 결정 (태깅됨 > 핫플 > 일반 순서)
+    if (isTagged) {
+        markerClass = 'theme-tagged'; 
+        pointColor = '#2ecc71'; // 태깅되면 강제 초록색
+        iconHtml = `<div class="tag-check-icon">✔</div>`; // 체크 아이콘 추가
+    } else if (isHot) {
+        markerClass = 'hot-marker';
+        iconHtml = `<div class="hot-fire-crown">🔥</div>`;
+    }
 
     var contentHtml = `
-        <div class="marker-label ${hotClass}" style="border: 2px solid ${pointColor}; will-change: transform; transform: translate(-50%, -100%);">
-            ${fireIconHtml}
+        <div class="marker-label ${markerClass}" style="border: 2px solid ${pointColor}; will-change: transform; transform: translate(-50%, -100%);">
+            ${iconHtml}
             <span class="overlay-badge" style="color: ${pointColor};">${categoryName}</span>
             <span class="overlay-name">${mainShop.name} ${badgeHtml}</span>
             <div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid ${pointColor};"></div>
@@ -62,11 +80,14 @@ export function createMarker(map, shopList, onClick) {
         position: new naver.maps.LatLng(mainShop.lat, mainShop.lng),
         map: map,
         icon: { content: contentHtml, size: new naver.maps.Size(0, 0), anchor: new naver.maps.Point(0, 0) },
-        zIndex: isHot ? 9999 : 100
+        zIndex: isTagged ? 9000 : (isHot ? 8000 : 100)
     });
 
+    // 마우스 올리면 맨 앞으로 가져오기
     naver.maps.Event.addListener(marker, 'mouseover', function() { marker.setZIndex(20000); });
-    naver.maps.Event.addListener(marker, 'mouseout', function() { marker.setZIndex(isHot ? 9999 : 100); });
+    naver.maps.Event.addListener(marker, 'mouseout', function() { marker.setZIndex(isTagged ? 9000 : (isHot ? 8000 : 100)); });
+    
     if (onClick) { naver.maps.Event.addListener(marker, 'click', function(e) { onClick(shopList); }); }
+    
     return marker;
 }

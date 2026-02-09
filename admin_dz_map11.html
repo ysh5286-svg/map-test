@@ -215,7 +215,38 @@
             }); 
             renderMarkers(filtered); 
         }
-        function renderMarkers(shops) { markerList.forEach(m => m.setMap(null)); markerList = []; const groups = {}; shops.forEach(s => { if(!s.lat)return; const k=s.lat.toFixed(5)+","+s.lng.toFixed(5); if(!groups[k])groups[k]=[]; groups[k].push(s); }); for(const k in groups) { var marker = createMarker(map, groups[k], handleMarkerClick); if (marker) markerList.push(marker); } }
+        // 🔥 [수정됨] 마커 렌더링 (태깅 여부 판단 로직 추가)
+        function renderMarkers(shops) {
+            markerList.forEach(m => m.setMap(null));
+            markerList = [];
+            
+            const groups = {};
+            shops.forEach(s => {
+                // 1. 좌표 그룹화
+                if (!s.lat) return;
+                const k = s.lat.toFixed(5) + "," + s.lng.toFixed(5);
+                
+                // 2. 🔥 [핵심] 현재 테마 모드일 때, 이 가게가 테마를 가지고 있는지 체크!
+                if (currentThemeMode && currentThemeMode !== "") {
+                    if (s.themes && s.themes.includes(currentThemeMode)) {
+                        s.isTagged = true; // 태그 됨! (common.js에서 초록색으로 그림)
+                    } else {
+                        s.isTagged = false; // 태그 안됨
+                    }
+                } else {
+                    s.isTagged = false; // 테마 모드 아닐 땐 기본 상태
+                }
+
+                if (!groups[k]) groups[k] = [];
+                groups[k].push(s);
+            });
+
+            for (const k in groups) {
+                // createMarker가 이제 s.isTagged 값을 보고 초록색 체크를 달아줍니다.
+                var marker = createMarker(map, groups[k], handleMarkerClick);
+                if (marker) markerList.push(marker);
+            }
+        }
         window.openEditModal = function(d) { $('#shopId').val(d.id); $('#shopName').val(d.name); $('#shopOwnerId').val(d.ownerId || ""); $('#shopRegion').val(d.region || ""); $('#shopArea').val(d.area); $('#shopMenu').val(d.menu); $('#shopIsHot').prop('checked', d.isHot === true); $('#shopParking').val(d.parking || ""); $('#shopTotalScore').val(d.totalScore); $('#shopDesc').val(d.desc); $('#shopAddress').val(d.address); $('#shopImage').val(d.imageUrl); $('#shopLink').val(d.link); $('#shopLat').val(d.lat); $('#shopLng').val(d.lng); $('#dupMsg').text(''); renderCheckboxes('categoryContainer', 'category', CAT_LIST, d.category); renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, d.purpose); $('#btnDelete').show(); $('.modal-title').text('📝 정보 수정'); $('#shopModal').addClass('show'); }
         window.openAddModal = function() { $('#shopId').val(''); $('input, textarea, select').val(''); $('#shopIsHot').prop('checked', false); renderCheckboxes('categoryContainer', 'category', CAT_LIST, []); renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, []); $('#btnDelete').hide(); $('.modal-title').text('✨ 새 업체 추가'); $('#shopModal').addClass('show'); }
         async function geocodeAddress(addr) { return new Promise(r=>{ naver.maps.Service.geocode({query:addr}, (s,res)=>{ if(s===naver.maps.Service.Status.OK && res.v2.addresses.length>0) r({lat:parseFloat(res.v2.addresses[0].y), lng:parseFloat(res.v2.addresses[0].x)}); else r(null); }); }); }
