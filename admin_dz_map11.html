@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>관리자 모드 (보안 강화됨)</title>
+    <title>관리자 모드 (오류수정완료)</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=krsv42ftzf&submodules=geocoder"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
@@ -133,18 +133,18 @@
     </div>
 
     <script type="module">
-        // 🔥 [중요] 인증 모듈(auth) 포함시킴
+        // 🔥 [중요] auth, onAuthStateChanged (보안 기능)
         import { db, initMap, createMarker, auth, onAuthStateChanged } from "./common.js";
         import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, getDocs, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         var password = prompt("관리자 비밀번호:");
         if (password !== "2364") { document.body.innerHTML = "⛔ 접근 거부"; throw new Error("비밀번호 오류"); }
 
-        // 🔥 [보안] 로그인 안 된 사람은 쫓아냄
+        // 🔥 [보안] 로그인 체크
         onAuthStateChanged(auth, (user) => {
             if (!user) {
                 alert("⛔ 로그인이 필요합니다!\n메인 페이지에서 구글 로그인을 먼저 해주세요.");
-                location.href = 'index.html'; // 메인으로 강제 이동
+                location.href = 'index.html'; 
             } else {
                 showToast("✅ 관리자 모드 접속 (로그인 확인됨)");
             }
@@ -163,7 +163,7 @@
         window.closeBulkModal = function() { $('#bulkModal').removeClass('show'); }
         window.closeSelectModal = function() { $('#selectModal').removeClass('show'); }
 
-        // ... (이하 로직 동일) ...
+        // ... (함수들) ...
         function renderCheckboxes(containerId, name, items, selected = []) { const container = document.getElementById(containerId); container.innerHTML = ''; const selectedList = Array.isArray(selected) ? selected : (selected ? [selected] : []); items.forEach(item => { const isChecked = selectedList.includes(item); const label = document.createElement('label'); label.className = 'check-item'; label.innerHTML = `<input type="checkbox" name="${name}" value="${item}" ${isChecked ? 'checked' : ''}> ${item}`; container.appendChild(label); }); }
         async function loadThemes() { const docRef = doc(db, "meta", "themes"); const docSnap = await getDoc(docRef); const select = document.getElementById('adminThemeSelect'); select.innerHTML = '<option value="">(기본) 업체 정보 수정 모드</option>'; if (docSnap.exists()) { themeList = docSnap.data().list || []; themeList.sort(); themeList.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = `📂 ${t}`; select.appendChild(opt); }); } }
         loadThemes();
@@ -174,16 +174,24 @@
         function handleMarkerClick(clickedList) { if (currentThemeMode) { if(clickedList.length > 1) showSelectModal(clickedList, true); else toggleShopTheme(clickedList[0]); } else { if (clickedList.length === 1) openEditModal(clickedList[0]); else showSelectModal(clickedList, false); } }
         window.showSelectModal = function(list, isThemeMode) { const container = document.getElementById('selectList'); container.innerHTML = ''; list.forEach(shop => { const div = document.createElement('div'); div.className = 'shop-select-item'; div.innerHTML = `<div class="shop-select-info"><span class="shop-select-name">${shop.name}</span></div>`; div.onclick = () => { closeSelectModal(); if(isThemeMode) toggleShopTheme(shop); else openEditModal(shop); }; container.appendChild(div); }); $('#selectModal').addClass('show'); }
         async function toggleShopTheme(shop) { const shopRef = doc(db, "shops", shop.id); const isAdded = shop.themes && shop.themes.includes(currentThemeMode); try { if(isAdded) { await updateDoc(shopRef, { themes: arrayRemove(currentThemeMode) }); showToast(`➖ 제거됨`); } else { await updateDoc(shopRef, { themes: arrayUnion(currentThemeMode) }); showToast(`➕ 추가됨`); } } catch(e){alert(e.message);} }
-        function showToast(msg) { const el=$('#toast'); el.innerText=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1500); }
+        
+        // 🔥 [버그수정] 토스트 메시지 함수 (제이쿼리 대신 순수 자바스크립트로 명확하게)
+        function showToast(msg) { 
+            const el = document.getElementById('toast'); 
+            if (!el) return; // 요소가 없으면 중단
+            el.innerText = msg; 
+            el.classList.add('show'); 
+            setTimeout(() => el.classList.remove('show'), 1500); 
+        }
         
         onSnapshot(collection(db, "shops"), (snapshot) => { 
             allShopsData = []; 
             snapshot.forEach(doc => allShopsData.push({ id: doc.id, ...doc.data() })); 
             
             if(allShopsData.length === 0) {
-                showToast("⚠️ 데이터 0건 (로그인 필요 가능성)");
+                showToast("⚠️ 데이터 0건 (혹시 로그인 풀림?)");
             } else {
-                showToast(`📂 총 ${allShopsData.length}개 장소 로드됨`);
+                showToast(`📂 총 ${allShopsData.length}개 로드됨`);
             }
             applyAdminFilters(); 
         });
