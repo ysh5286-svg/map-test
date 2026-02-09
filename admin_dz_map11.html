@@ -93,7 +93,7 @@
                 <label class="form-label">업체명 <span id="dupMsg" class="dup-msg"></span></label>
                 <input type="text" id="shopName" class="form-input" placeholder="상호명을 입력하세요" autocomplete="off">
             </div>
-            
+
             <div class="form-group" style="background:#f8f9fa; padding:10px; border:1px solid #ddd; border-radius:5px;">
                 <label class="form-label">👑 사장님 UID 연결 (선택)</label>
                 <input type="text" id="shopOwnerId" class="form-input" placeholder="유저에게 받은 UID 붙여넣기" style="font-family:monospace; font-size:12px;">
@@ -317,6 +317,7 @@
         window.openEditModal = function(d) {
             $('#shopId').val(d.id); 
             $('#shopName').val(d.name); 
+            $('#shopOwnerId').val(d.ownerId || "");
             $('#shopRegion').val(d.region || ""); 
             $('#shopArea').val(d.area); 
             $('#shopMenu').val(d.menu);

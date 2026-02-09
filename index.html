@@ -739,7 +739,7 @@
         uidInput.setSelectionRange(0, 99999); // 모바일 대응
 
         navigator.clipboard.writeText(uidInput.value).then(() => {
-            alert("✅ 아이디(UID)가 복사되었습니다!\n사장님께 카톡으로 보내주세요.");
+            alert("✅ 아이디(UID)가 복사되었습니다!\n보물지도 관리자에게 보내주세요.");
         }).catch(() => {
             alert("복사 실패 ㅠㅠ 직접 긁어서 복사해주세요.");
         });
@@ -949,10 +949,29 @@
         gpsBtn.style.background = '#e74c3c';
         gpsBtn.style.marginTop = '10px';
         gpsBtn.innerHTML = '📍 <b>여기 왔어요! (GPS 인증)</b>';
+        // ... (위에는 GPS 버튼 만드는 코드) ...
+        
         gpsBtn.onclick = function() { verifyVisitByGPS(shop.lat, shop.lng, shop.name); };
         
-        const panelBody = document.querySelector('.panel-body');
+        // panelBody.insertBefore(gpsBtn, btnLink);  <-- 원래 있던 이 줄은 지우거나 주석 처리하고 아래 코드로 대체하세요.
+
+        // 🔥 [수정] 순서 정렬: (위) 사장님버튼 -> GPS버튼 -> 네이버버튼 (아래)
+        // 1. 네이버 버튼은 이미 appendChild로 맨 뒤에 붙어있음.
+        // 2. GPS 버튼을 네이버 버튼 앞에 끼워넣기
         panelBody.insertBefore(gpsBtn, btnLink);
+
+        // 🔥 [추가됨] C. 사장님 수정 버튼 (주인일 때만 보임)
+        if (user && shop.ownerId === user.uid) {
+            const ownerBtn = document.createElement('button');
+            ownerBtn.className = 'panel-btn dynamic-btn';
+            ownerBtn.style.background = '#2c3e50'; // 진한 남색
+            ownerBtn.style.border = '2px solid #f1c40f'; // 노란 테두리
+            ownerBtn.innerHTML = '✏️ <b>사장님 정보 수정</b>';
+            ownerBtn.onclick = function() { editMyShop(shop); };
+            
+            // GPS 버튼 바로 위에 끼워넣기 (제일 상단)
+            panelBody.insertBefore(ownerBtn, gpsBtn);
+        }
 
         document.getElementById('faqPanel').classList.remove('show');
         document.getElementById('selectModal').classList.remove('show');
