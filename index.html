@@ -61,6 +61,11 @@
             <div class="search-input-row">
                 <span class="search-icon">🔍</span>
                 <input type="text" id="keyword" class="search-input" placeholder="예: 동성로 두바이" onchange="applyAllFilters()">
+                <div class="search-filters">
+    <button id="btnShowLikes" onclick="toggleLikeFilter()" style="background:white; border:1px solid #e74c3c; color:#e74c3c; border-radius:6px; padding:8px; font-size:13px; font-weight:bold; cursor:pointer; min-width:80px; display:flex; align-items:center; gap:4px;">
+        🤍 찜만 보기
+    </button>
+</div>
             </div>
         </div>
     </div>
@@ -127,6 +132,40 @@
             <button class="modal-close-x" onclick="closeSelectModal()">×</button>
             <h3 class="modal-title" style="font-size:16px; margin-bottom:15px;">👇 매장을 선택해주세요</h3>
             <div id="selectList" class="shop-select-list"></div>
+        </div>
+    </div>
+
+<div id="profileModal" class="modal-overlay">
+        <div class="modal-box" style="text-align:center; max-width:350px;">
+            <button class="modal-close-x" onclick="closeProfileModal()">×</button>
+            
+            <div style="margin-top:10px; margin-bottom:20px;">
+                <div style="font-size:50px;">😎</div> <h3 id="pName" style="margin:10px 0 5px 0; font-size:20px;">홍길동</h3>
+                <span id="pLevelBadge" style="background:#3498db; color:white; padding:3px 8px; border-radius:12px; font-size:12px; font-weight:bold;">LV.1 배고픈 영혼</span>
+            </div>
+
+            <div style="background:#f8f9fa; padding:15px; border-radius:12px; margin-bottom:20px; text-align:left;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:13px; font-weight:bold; color:#555;">
+                    <span>🏆 현재 경험치</span>
+                    <span id="pExpText" style="color:#e74c3c;">0 / 10</span>
+                </div>
+                <div style="width:100%; background:#ddd; height:10px; border-radius:5px; overflow:hidden;">
+                    <div id="pExpBar" style="width:0%; background:linear-gradient(90deg, #f1c40f, #e67e22); height:100%; transition:width 0.5s;"></div>
+                </div>
+                <p style="font-size:11px; color:#888; margin-top:8px;">※ 맛집 1곳 방문 시 경험치 +10 획득!</p>
+            </div>
+
+            <div style="border:1px dashed #aaa; padding:12px; border-radius:8px; background:#fff; margin-bottom:20px;">
+                <p style="font-size:12px; color:#666; margin:0 0 5px 0;">👑 사장님 연결용 고유 ID (UID)</p>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <input type="text" id="pUid" readonly style="flex:1; background:#eee; border:none; padding:8px; border-radius:4px; font-size:11px; font-family:monospace; text-align:center; color:#333;">
+                    <button onclick="copyUidInModal()" style="background:#2c3e50; color:white; border:none; padding:8px 12px; border-radius:4px; font-size:12px; cursor:pointer; font-weight:bold;">복사</button>
+                </div>
+            </div>
+
+            <button onclick="googleLogout()" style="width:100%; padding:12px; background:#e74c3c; color:white; border:none; border-radius:8px; font-size:14px; font-weight:bold; cursor:pointer;">
+                로그아웃
+            </button>
         </div>
     </div>
 
@@ -436,6 +475,31 @@
         }
     }
 
+// 전역 변수로 찜 필터 상태 관리
+    let isLikeFilterOn = false;
+
+    // 1. 찜 필터 버튼 클릭 시 실행
+    window.toggleLikeFilter = function() {
+        const user = auth.currentUser;
+        if(!user) return alert("로그인한 유저만 쓸 수 있는 기능입니다! 😅");
+
+        isLikeFilterOn = !isLikeFilterOn; // 켜기/끄기 토글
+        
+        const btn = document.getElementById('btnShowLikes');
+        if(isLikeFilterOn) {
+            btn.style.background = "#e74c3c";
+            btn.style.color = "white";
+            btn.innerHTML = "❤️ 전체 보기";
+            alert("내가 찜한 맛집만 지도에 남깁니다!");
+        } else {
+            btn.style.background = "white";
+            btn.style.color = "#e74c3c";
+            btn.innerHTML = "🤍 찜만 보기";
+        }
+        updateVisibleMarkers(); // 지도 다시 그리기
+    }
+
+    // 2. 필터 로직 (수정됨)
     function filterShops(shops) {
         var theme = $('#mainThemeSelect').val();
         var region = $('#filterRegion').val();
@@ -443,7 +507,19 @@
         var purpose = $('#filterPurpose').val();
         var keywordInput = $('#keyword').val() || "";
         var keywords = keywordInput.toLowerCase().trim().split(/\s+/).filter(t => t.length > 0);
+        
+        // 🔥 [추가됨] 로그인 유저 정보 가져오기
+        const user = auth.currentUser;
+
         return shops.filter(shop => {
+            // 1. 찜 필터가 켜져있으면, 내 아이디가 likedBy에 있는지 확인
+            if (isLikeFilterOn) {
+                if (!user || !shop.likedBy || !shop.likedBy.includes(user.uid)) {
+                    return false; // 탈락 (숨김)
+                }
+            }
+
+            // (기존 필터 로직들...)
             var matchTheme = true;
             if (theme && theme !== 'ALL') { if (!shop.themes || !shop.themes.includes(theme)) matchTheme = false; }
             var matchRegion = (region === "") || (shop.region === region);
@@ -454,6 +530,7 @@
             var searchableText = (shop.name + " " + (shop.menu || "") + " " + (shop.area || "") + " " + (shop.address || "") + " " + shopCategories.join(" ")).toLowerCase();
             var matchKeyword = true;
             if (keywords.length > 0) { matchKeyword = keywords.every(term => searchableText.includes(term)); }
+            
             return matchTheme && matchRegion && matchCategory && matchPurpose && matchKeyword;
         });
     }
@@ -561,12 +638,23 @@
         if(confirm("로그아웃 하시겠습니까?")) { signOut(auth).then(() => { alert("로그아웃 되었습니다."); location.reload(); }); }
     };
 
+// 3. [수정됨] 로그인 감지 & 프로필 팝업 연결
     onAuthStateChanged(auth, async (user) => {
         const btnLogin = document.getElementById('btnLogin');
         const myProfile = document.getElementById('myProfile');
+        
         if (user) {
-            btnLogin.style.display = 'none'; myProfile.style.display = 'flex';
+            btnLogin.style.display = 'none';
+            myProfile.style.display = 'flex';
+            
+            // 🔥 [핵심] 이름표를 클릭하면 '프로필 팝업'이 열리도록 설정
+            // (cursor:pointer로 눌러보고 싶게 만듦)
+            myProfile.style.cursor = "pointer";
+            myProfile.onclick = function() { openProfileModal(); };
+
             document.getElementById('userName').innerText = user.displayName;
+            
+            // 미니 배지 업데이트
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
             if(userSnap.exists()) {
@@ -575,9 +663,69 @@
                 document.getElementById('userLevelBadge').innerText = `LV.${lv}`;
             }
         } else {
-            btnLogin.style.display = 'flex'; myProfile.style.display = 'none';
+            btnLogin.style.display = 'flex';
+            myProfile.style.display = 'none';
         }
     });
+
+    // ==========================================
+    // 🚀 [추가됨] 프로필 팝업 관련 함수들
+    // ==========================================
+    window.openProfileModal = async function() {
+        const user = auth.currentUser;
+        if(!user) return;
+
+        // DB에서 최신 정보 가져오기
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if(userSnap.exists()) {
+            const data = userSnap.data();
+            const exp = data.exp || 0;
+            const lv = calculateLevel(exp);
+            
+            // 1. 이름 & 레벨 표시
+            document.getElementById('pName').innerText = user.displayName;
+            
+            // 레벨별 칭호 (아까 설정한 거랑 맞춤)
+            let title = "배고픈 영혼";
+            if(lv >= 4) title = "맛의 지배자";
+            else if(lv >= 3) title = "대구의 아들";
+            else if(lv >= 2) title = "서툰 미식가";
+            
+            document.getElementById('pLevelBadge').innerText = `LV.${lv} ${title}`;
+            
+            // 2. 경험치 바 채우기 (10점 만점 기준 나머지 계산)
+            // (예: 25점이면 -> 레벨3, 현재 5점/10점)
+            const currentExp = exp % 10; 
+            const percent = (currentExp / 10) * 100;
+            
+            document.getElementById('pExpText').innerText = `${currentExp} / 10`;
+            document.getElementById('pExpBar').style.width = `${percent}%`;
+            
+            // 3. UID 세팅
+            document.getElementById('pUid').value = user.uid;
+
+            // 팝업 열기
+            document.getElementById('profileModal').classList.add('show');
+        }
+    }
+
+    window.closeProfileModal = function() {
+        document.getElementById('profileModal').classList.remove('show');
+    }
+
+    window.copyUidInModal = function() {
+        const uidInput = document.getElementById('pUid');
+        uidInput.select();
+        uidInput.setSelectionRange(0, 99999); // 모바일 대응
+
+        navigator.clipboard.writeText(uidInput.value).then(() => {
+            alert("✅ 아이디(UID)가 복사되었습니다!\n사장님께 카톡으로 보내주세요.");
+        }).catch(() => {
+            alert("복사 실패 ㅠㅠ 직접 긁어서 복사해주세요.");
+        });
+    }
 
     async function checkUserDB(user) {
         const userRef = doc(db, "users", user.uid);
