@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>관리자 모드 (필터 수정완료)</title>
+    <title>관리자 모드 (UID 수정완료)</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=krsv42ftzf&submodules=geocoder"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* 관리자 페이지 전용 스타일 */
         .admin-search-input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 13px; width: 120px; outline: none; color: #333; }
         .admin-select { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; color: #333; background: white; cursor: pointer; }
         .search-box-wrapper { gap: 5px; flex-wrap: wrap; }
-
         .bulk-textarea { width: 100%; height: 200px; font-size: 12px; font-family: monospace; padding: 10px; border: 1px solid #ccc; background: #f4f4f4; margin-bottom: 10px; }
         .bulk-status { font-size: 12px; color: #e74c3c; margin-top: 5px; font-weight: bold; max-height: 100px; overflow-y: auto; }
         .shop-select-item { display: flex; justify-content: space-between; align-items: center; }
@@ -21,12 +19,15 @@
         .dup-msg { font-size: 12px; margin-left: 10px; font-weight: bold; }
         .check-item { display: inline-flex; align-items: center; margin-right: 10px; margin-bottom: 5px; cursor: pointer; font-size: 13px; }
         .check-item input { margin-right: 5px; cursor: pointer; }
-        
-        .hot-check-wrapper {
-            background: #ffe3e3; border: 2px solid #ff6b6b; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;
-        }
+        .hot-check-wrapper { background: #ffe3e3; border: 2px solid #ff6b6b; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
         .hot-check-label { font-weight: bold; color: #c0392b; font-size: 14px; display: flex; align-items: center; gap: 5px; cursor: pointer; }
         .hot-check-input { width: 20px; height: 20px; cursor: pointer; accent-color: #e74c3c; }
+        .admin-theme-panel { position: relative; width: 100%; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); padding: 10px; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; border: 2px solid #2c3e50; z-index: 100; }
+        .theme-control-row { display: flex; gap: 5px; align-items: center; }
+        .theme-mode-badge { background: #e74c3c; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; animation: blink 2s infinite; display: none; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .toast-msg { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; z-index: 2000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .toast-msg.show { opacity: 1; }
     </style>
 </head>
 <body>
@@ -34,40 +35,26 @@
         <div class="search-box-wrapper" style="background:#c0392b; color:white; flex-direction:row; align-items:center; padding: 10px;">
             <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; flex:1;">
                 <strong style="white-space:nowrap;">🔒 관리</strong>
-                
-                <select id="adminRegion" class="admin-select" onchange="applyAdminFilters()">
-                    <option value="">📍 지역 전체</option><option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option>
-                </select>
-                <select id="adminCategory" class="admin-select" onchange="applyAdminFilters()">
-                    <option value="">🍜 업종 전체</option><option value="한식">한식</option><option value="중식">중식</option><option value="일식">일식</option><option value="양식">양식</option><option value="분식">분식</option><option value="고기/구이">고기/구이</option><option value="회/해산물">회/해산물</option><option value="아시안">아시안</option><option value="술집">술집</option><option value="카페/디저트">카페/디저트</option><option value="빵집">빵집</option><option value="패스트푸드">패스트푸드</option><option value="포장/배달">포장/배달</option>
-                </select>
-                <select id="adminPurpose" class="admin-select" onchange="applyAdminFilters()">
-                    <option value="">✨ 분위기 전체</option><option value="노포">노포</option><option value="데이트">데이트</option><option value="단체회식">단체회식</option><option value="혼밥/혼술">혼밥/혼술</option><option value="무한리필">무한리필</option><option value="이색맛집">이색맛집</option><option value="뷰맛집">뷰맛집</option><option value="상견례">상견례</option><option value="야간영업">야간영업</option>
-                </select>
-
+                <select id="adminRegion" class="admin-select" onchange="applyAdminFilters()"><option value="">📍 지역 전체</option><option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option></select>
+                <select id="adminCategory" class="admin-select" onchange="applyAdminFilters()"><option value="">🍜 업종 전체</option><option value="한식">한식</option><option value="중식">중식</option><option value="일식">일식</option><option value="양식">양식</option><option value="분식">분식</option><option value="고기/구이">고기/구이</option><option value="회/해산물">회/해산물</option><option value="아시안">아시안</option><option value="술집">술집</option><option value="카페/디저트">카페/디저트</option><option value="빵집">빵집</option><option value="패스트푸드">패스트푸드</option><option value="포장/배달">포장/배달</option></select>
+                <select id="adminPurpose" class="admin-select" onchange="applyAdminFilters()"><option value="">✨ 분위기 전체</option><option value="노포">노포</option><option value="데이트">데이트</option><option value="단체회식">단체회식</option><option value="혼밥/혼술">혼밥/혼술</option><option value="무한리필">무한리필</option><option value="이색맛집">이색맛집</option><option value="뷰맛집">뷰맛집</option><option value="상견례">상견례</option><option value="야간영업">야간영업</option></select>
                 <input type="text" id="adminSearch" class="admin-search-input" placeholder="🔍 이름 검색" onkeyup="applyAdminFilters()">
             </div>
-            
             <div style="display:flex; gap:5px;">
                 <button onclick="openBulkModal()" style="background:#f1c40f; color:#333; border:none; padding:6px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:12px; white-space:nowrap;">⚡ 일괄</button>
                 <button onclick="openAddModal()" style="background:#2c3e50; color:white; border:none; padding:6px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:12px; white-space:nowrap;">➕ 추가</button>
                 <button onclick="location.href='index.html'" style="background:white; color:#c0392b; border:none; padding:6px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:12px; white-space:nowrap;">나가기</button>
             </div>
         </div>
-
         <div class="admin-theme-panel">
             <div class="theme-control-row">
                 <span style="font-weight:bold; font-size:13px; color:#333;">🎨 테마:</span>
-                <select id="adminThemeSelect" class="form-select" style="flex:1;" onchange="toggleThemeMode()">
-                    <option value="">(기본) 업체 정보 수정 모드</option>
-                </select>
+                <select id="adminThemeSelect" class="form-select" style="flex:1;" onchange="toggleThemeMode()"><option value="">(기본) 업체 정보 수정 모드</option></select>
                 <button onclick="addNewTheme()" style="background:#2ecc71; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">+추가</button>
                 <button onclick="deleteTheme()" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">-삭제</button>
                 <button onclick="renameTheme()" style="background:#3498db; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; margin-left:5px;">✏️이름 변경</button>
             </div>
-            <div id="themeModeStatus" class="theme-mode-badge">
-                ⚡ <b>테마 태깅 모드 ON</b><br>지도의 핀을 클릭하면 해당 테마에 즉시 추가/제거됩니다.
-            </div>
+            <div id="themeModeStatus" class="theme-mode-badge">⚡ <b>테마 태깅 모드 ON</b><br>지도의 핀을 클릭하면 해당 테마에 즉시 추가/제거됩니다.</div>
         </div>
     </div>
     
@@ -88,75 +75,28 @@
             <button class="modal-close-x" onclick="closeModal()">×</button>
             <h3 class="modal-title">업체 정보 관리</h3>
             <input type="hidden" id="shopId"><input type="hidden" id="shopLat"><input type="hidden" id="shopLng">
+            <div class="form-group"><label class="form-label">업체명 <span id="dupMsg" class="dup-msg"></span></label><input type="text" id="shopName" class="form-input" placeholder="상호명을 입력하세요" autocomplete="off"></div>
             
-            <div class="form-group">
-                <label class="form-label">업체명 <span id="dupMsg" class="dup-msg"></span></label>
-                <input type="text" id="shopName" class="form-input" placeholder="상호명을 입력하세요" autocomplete="off">
-            </div>
-
             <div class="form-group" style="background:#f8f9fa; padding:10px; border:1px solid #ddd; border-radius:5px;">
                 <label class="form-label">👑 사장님 UID 연결 (선택)</label>
                 <input type="text" id="shopOwnerId" class="form-input" placeholder="유저에게 받은 UID 붙여넣기" style="font-family:monospace; font-size:12px;">
             </div>
 
-            <div class="hot-check-wrapper">
-                <label class="hot-check-label">
-                    <input type="checkbox" id="shopIsHot" class="hot-check-input">
-                    🔥 지도에서 강조하기 (테두리 + 불꽃)
-                </label>
-            </div>
-
+            <div class="hot-check-wrapper"><label class="hot-check-label"><input type="checkbox" id="shopIsHot" class="hot-check-input"> 🔥 지도에서 강조하기 (테두리 + 불꽃)</label></div>
             <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">📍 지역 (필수)</label>
-                    <select id="shopRegion" class="form-input">
-                        <option value="">선택하세요</option>
-                        <option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option>
-                    </select>
-                </div>
+                <div class="form-group"><label class="form-label">📍 지역 (필수)</label><select id="shopRegion" class="form-input"><option value="">선택하세요</option><option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option></select></div>
                 <div class="form-group"><label class="form-label">상권 (예: 동성로)</label><input type="text" id="shopArea" class="form-input" autocomplete="off"></div>
             </div>
-
             <div class="form-group"><label class="form-label">대표메뉴</label><input type="text" id="shopMenu" class="form-input" autocomplete="off"></div>
-
-            <div class="form-group" style="background:#e3f2fd; padding:10px; border-radius:5px;">
-                <label class="form-label">🚗 주차 정보</label>
-                <select id="shopParking" class="form-input" style="font-weight:bold;">
-                    <option value="">선택하세요</option>
-                    <option value="❌ 주차 불가">❌ 주차 불가</option>
-                    <option value="⚠️ 주차 협소">⚠️ 주차 협소 (1~2대)</option>
-                    <option value="🅿️ 주차장 완비">🅿️ 주차장 완비</option>
-                </select>
-            </div>
-            
-            <div class="form-group" style="background:#fff9db; padding:10px; border-radius:5px;">
-                <label class="form-label" style="color:#f59f00;">⭐ 다즐 별점 (5.0 만점 / 0.25 단위)</label>
-                <input type="number" id="shopTotalScore" class="form-input" step="0.25" max="5.0" placeholder="예: 4.25" style="font-weight:bold; font-size:16px;">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">🗨️ 한줄평</label>
-                <textarea id="shopDesc" class="form-textarea" placeholder="추천 멘트" rows="2"></textarea>
-            </div>
-
+            <div class="form-group" style="background:#e3f2fd; padding:10px; border-radius:5px;"><label class="form-label">🚗 주차 정보</label><select id="shopParking" class="form-input" style="font-weight:bold;"><option value="">선택하세요</option><option value="❌ 주차 불가">❌ 주차 불가</option><option value="⚠️ 주차 협소">⚠️ 주차 협소 (1~2대)</option><option value="🅿️ 주차장 완비">🅿️ 주차장 완비</option></select></div>
+            <div class="form-group" style="background:#fff9db; padding:10px; border-radius:5px;"><label class="form-label" style="color:#f59f00;">⭐ 다즐 별점</label><input type="number" id="shopTotalScore" class="form-input" step="0.25" max="5.0" placeholder="예: 4.25" style="font-weight:bold; font-size:16px;"></div>
+            <div class="form-group"><label class="form-label">🗨️ 한줄평</label><textarea id="shopDesc" class="form-textarea" placeholder="추천 멘트" rows="2"></textarea></div>
             <div class="form-group"><label class="form-label">주소</label><input type="text" id="shopAddress" class="form-input" autocomplete="off"></div>
             <div class="form-group"><label class="form-label">이미지 URL</label><input type="text" id="shopImage" class="form-input" autocomplete="off"></div>
             <div class="form-group"><label class="form-label">네이버 플레이스 링크</label><input type="text" id="shopLink" class="form-input" autocomplete="off"></div>
-
-            <div class="form-group">
-                <label class="form-label">업종</label>
-                <div class="multi-select-container" id="categoryContainer"></div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">목적</label>
-                <div class="multi-select-container" id="purposeContainer"></div>
-            </div>
-            
-            <div class="modal-btns">
-                <button class="btn-delete" id="btnDelete" onclick="deleteCurrentShop()">삭제</button>
-                <button class="btn-save" onclick="saveShop()">저장</button>
-            </div>
+            <div class="form-group"><label class="form-label">업종</label><div class="multi-select-container" id="categoryContainer"></div></div>
+            <div class="form-group"><label class="form-label">목적</label><div class="multi-select-container" id="purposeContainer"></div></div>
+            <div class="modal-btns"><button class="btn-delete" id="btnDelete" onclick="deleteCurrentShop()">삭제</button><button class="btn-save" onclick="saveShop()">저장</button></div>
         </div>
     </div>
 
@@ -210,11 +150,7 @@
             if (docSnap.exists()) {
                 themeList = docSnap.data().list || [];
                 themeList.sort();
-                themeList.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t; opt.innerText = `📂 ${t}`;
-                    select.appendChild(opt);
-                });
+                themeList.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = `📂 ${t}`; select.appendChild(opt); });
             }
         }
         loadThemes();
@@ -234,24 +170,17 @@
             const oldName = $('#adminThemeSelect').val(); if(!oldName) return alert("선택필요");
             const newName = prompt("새 이름:", oldName); if(!newName || newName===oldName) return;
             themeList = themeList.map(t => t === oldName ? newName : t); themeList.sort();
-            await setDoc(doc(db, "meta", "themes"), { list: themeList });
-            alert("변경됨"); loadThemes();
+            await setDoc(doc(db, "meta", "themes"), { list: themeList }); alert("변경됨"); loadThemes();
         }
         window.deleteTheme = async function() {
             const target = $('#adminThemeSelect').val(); if(!target) return alert("선택필요");
             if(!confirm("삭제합니까?")) return;
-            await updateDoc(doc(db, "meta", "themes"), { list: arrayRemove(target) });
-            alert("삭제됨"); loadThemes(); $('#adminThemeSelect').val(""); toggleThemeMode();
+            await updateDoc(doc(db, "meta", "themes"), { list: arrayRemove(target) }); alert("삭제됨"); loadThemes(); $('#adminThemeSelect').val(""); toggleThemeMode();
         }
 
         function handleMarkerClick(clickedList) {
-            if (currentThemeMode) {
-                if(clickedList.length > 1) showSelectModal(clickedList, true); 
-                else toggleShopTheme(clickedList[0]);
-            } else {
-                if (clickedList.length === 1) openEditModal(clickedList[0]);
-                else showSelectModal(clickedList, false);
-            }
+            if (currentThemeMode) { if(clickedList.length > 1) showSelectModal(clickedList, true); else toggleShopTheme(clickedList[0]); } 
+            else { if (clickedList.length === 1) openEditModal(clickedList[0]); else showSelectModal(clickedList, false); }
         }
         
         window.showSelectModal = function(list, isThemeMode) {
@@ -285,7 +214,6 @@
             var category = $('#adminCategory').val();
             var purpose = $('#adminPurpose').val();
             var keyword = $('#adminSearch').val().toLowerCase().replace(/\s+/g, '');
-
             var filtered = allShopsData.filter(shop => {
                 var matchRegion = (region === "") || (shop.region === region);
                 var shopCats = Array.isArray(shop.category) ? shop.category : [shop.category];
@@ -300,36 +228,22 @@
         }
 
         function renderMarkers(shops) {
-            // 🔥 [수정됨] 마커를 지울 때 '진짜로' 지우기 위해 목록 관리
-            markerList.forEach(m => m.setMap(null)); 
-            markerList = []; // 목록 초기화
-            
+            markerList.forEach(m => m.setMap(null)); markerList = [];
             const groups = {};
             shops.forEach(s => { if(!s.lat)return; const k=s.lat.toFixed(5)+","+s.lng.toFixed(5); if(!groups[k])groups[k]=[]; groups[k].push(s); });
-            
-            for(const k in groups) {
-                // 🔥 [중요] 새로 만든 마커를 markerList에 반드시 넣어야 나중에 지울 수 있음
-                var marker = createMarker(map, groups[k], handleMarkerClick);
-                if (marker) markerList.push(marker); 
-            }
+            for(const k in groups) { var marker = createMarker(map, groups[k], handleMarkerClick); if (marker) markerList.push(marker); }
         }
 
         window.openEditModal = function(d) {
-            $('#shopId').val(d.id); 
-            $('#shopName').val(d.name); 
+            $('#shopId').val(d.id); $('#shopName').val(d.name); 
+            // 🔥 [중요] 기존 UID 불러오기 (이거 없으면 UID 삭제됨)
             $('#shopOwnerId').val(d.ownerId || "");
-            $('#shopRegion').val(d.region || ""); 
-            $('#shopArea').val(d.area); 
-            $('#shopMenu').val(d.menu);
+            $('#shopRegion').val(d.region || ""); $('#shopArea').val(d.area); $('#shopMenu').val(d.menu);
             $('#shopIsHot').prop('checked', d.isHot === true);
-            $('#shopParking').val(d.parking || ""); 
-            $('#shopTotalScore').val(d.totalScore); 
-            $('#shopDesc').val(d.desc); 
-            $('#shopAddress').val(d.address);
-            $('#shopImage').val(d.imageUrl); 
-            $('#shopLink').val(d.link);
-            $('#shopLat').val(d.lat); $('#shopLng').val(d.lng);
-            $('#dupMsg').text('');
+            $('#shopParking').val(d.parking || ""); $('#shopTotalScore').val(d.totalScore); 
+            $('#shopDesc').val(d.desc); $('#shopAddress').val(d.address);
+            $('#shopImage').val(d.imageUrl); $('#shopLink').val(d.link);
+            $('#shopLat').val(d.lat); $('#shopLng').val(d.lng); $('#dupMsg').text('');
             renderCheckboxes('categoryContainer', 'category', CAT_LIST, d.category);
             renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, d.purpose);
             $('#btnDelete').show(); $('.modal-title').text('📝 정보 수정'); $('#shopModal').addClass('show');
@@ -345,37 +259,29 @@
         async function geocodeAddress(addr) { return new Promise(r=>{ naver.maps.Service.geocode({query:addr}, (s,res)=>{ if(s===naver.maps.Service.Status.OK && res.v2.addresses.length>0) r({lat:parseFloat(res.v2.addresses[0].y), lng:parseFloat(res.v2.addresses[0].x)}); else r(null); }); }); }
 
         window.saveShop = async function() {
-            var id = $('#shopId').val();
-            var name = $('#shopName').val().trim();
+            var id = $('#shopId').val(); var name = $('#shopName').val().trim();
             if (!name) { alert("⛔ 업체명을 입력해주세요!"); $('#shopName').focus(); return; }
-            var region = $('#shopRegion').val();
-            if (!region) { alert("⛔ 지역을 선택해주세요!"); $('#shopRegion').focus(); return; }
-
+            var region = $('#shopRegion').val(); if (!region) { alert("⛔ 지역을 선택해주세요!"); $('#shopRegion').focus(); return; }
             var lat = parseFloat($('#shopLat').val()); var lng = parseFloat($('#shopLng').val());
             var address = $('#shopAddress').val().trim();
-            
             if (isNaN(lat) || isNaN(lng) || lat===0) {
                  if (!address) { alert("주소 필수"); return; }
                  const res = await geocodeAddress(address);
-                 if(res) { lat=res.lat; lng=res.lng; $('#shopLat').val(lat); $('#shopLng').val(lng); } 
-                 else { alert("주소 찾기 실패"); return; }
+                 if(res) { lat=res.lat; lng=res.lng; $('#shopLat').val(lat); $('#shopLng').val(lng); } else { alert("주소 찾기 실패"); return; }
             }
-
             let rawScore = parseFloat($('#shopTotalScore').val()) || 0;
             if (rawScore > 5) { alert("최대 5점입니다."); return; }
-
             var data = {
-                name: name, category: [], purpose: [],
-                region: region, area: $('#shopArea').val(), menu: $('#shopMenu').val(),
-                isHot: $('#shopIsHot').is(':checked'),
-                parking: $('#shopParking').val(), totalScore: rawScore, desc: $('#shopDesc').val(), 
+                name: name, category: [], purpose: [], region: region, area: $('#shopArea').val(), menu: $('#shopMenu').val(),
+                isHot: $('#shopIsHot').is(':checked'), parking: $('#shopParking').val(), totalScore: rawScore, desc: $('#shopDesc').val(), 
                 address: address, imageUrl: $('#shopImage').val(), link: $('#shopLink').val(),
+                // 🔥 [중요] UID 저장하기
+                ownerId: $('#shopOwnerId').val().trim(),
                 lat: lat, lng: lng, updatedAt: new Date(),
                 themes: allShopsData.find(s => s.id === id)?.themes || [] 
             };
             document.querySelectorAll('input[name="category"]').forEach(node => { if(node.checked) data.category.push(node.value); });
             document.querySelectorAll('input[name="purpose"]').forEach(node => { if(node.checked) data.purpose.push(node.value); });
-
             try {
                 if (id) { await updateDoc(doc(db, "shops", id), data); alert("✅ 수정 완료!"); } 
                 else { data.createdAt = new Date(); await addDoc(collection(db, "shops"), data); alert("✅ 등록 완료!"); }
@@ -394,8 +300,7 @@
             $('#shopId').val(''); $('input, textarea, select').val(''); $('#shopIsHot').prop('checked', false);
             renderCheckboxes('categoryContainer', 'category', CAT_LIST, []);
             renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, []);
-            $('#shopLat').val(e.coord.lat()); $('#shopLng').val(e.coord.lng()); 
-            $('#dupMsg').text(''); $('#btnDelete').hide(); 
+            $('#shopLat').val(e.coord.lat()); $('#shopLng').val(e.coord.lng()); $('#dupMsg').text(''); $('#btnDelete').hide(); 
             $('.modal-title').text('✨ 새 업체 등록'); $('#shopModal').addClass('show');
         });
     </script>
