@@ -14,6 +14,15 @@
     @media (max-width: 768px) {
         #userStatusCard { top: 240px !important; left: 50% !important; transform: translateX(-50%) !important; width: 90% !important; justify-content: center !important; }
     }
+    /* 프로필 모달 스타일 */
+    .profile-header { text-align: center; margin-bottom: 20px; }
+    .profile-img { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #3498db; margin-bottom: 10px; }
+    .profile-name { font-size: 18px; font-weight: bold; color: #333; }
+    .profile-level { color: #3498db; font-weight: bold; font-size: 14px; }
+    .exp-bar-bg { width: 100%; height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin: 10px 0; }
+    .exp-bar-fill { height: 100%; background: #3498db; width: 0%; transition: width 0.5s; }
+    .history-list { max-height: 200px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 8px; font-size: 13px; }
+    .history-item { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
@@ -42,7 +51,7 @@
         <button id="btnLogin" onclick="googleLogin()" style="background:white; border:1px solid #ddd; padding:8px 12px; border-radius:20px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.1); cursor:pointer; display:flex; align-items:center; gap:5px; color:#444;">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18"> 구글 로그인
         </button>
-        <div id="myProfile" style="display:none; background:white; border:1px solid #3498db; padding:6px 12px; border-radius:20px; box-shadow:0 2px 5px rgba(0,0,0,0.1); align-items:center; gap:8px;">
+        <div id="myProfile" onclick="openProfileModal()" style="display:none; background:white; border:1px solid #3498db; padding:6px 12px; border-radius:20px; box-shadow:0 2px 5px rgba(0,0,0,0.1); align-items:center; gap:8px; cursor: pointer;">
             <span id="userLevelBadge" style="background:#3498db; color:white; font-size:11px; padding:2px 6px; border-radius:10px; font-weight:bold;">LV.1</span>
             <span id="userName" style="font-size:13px; font-weight:bold; color:#333;">홍길동</span>
         </div>
@@ -52,15 +61,50 @@
         <div class="faq-header"><h3>자주 묻는 질문</h3><button class="faq-close" onclick="toggleFaq()">✕</button></div>
         <div class="faq-body">
             <div class="faq-item"><div class="faq-q">Q. '대구보물지도'는 무엇인가요?</div><div class="faq-a">대구 찐맛집 정보를 한눈에 볼 수 있는 서비스입니다.</div></div>
+            <div class="faq-item"><div class="faq-q">🏆 레벨은 어떻게 올리나요?</div><div class="faq-a">가게에 도착해서 <b>[📍 여기 왔어요! (GPS 인증)]</b> 버튼만 누르면 끝!<br>(방문 1회 = 경험치 10점 획득 🎁)</div></div>
+            
             <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-            <div style="padding: 0 20px 10px 20px;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <a href="https://open.kakao.com/o/gaV5kk8h" target="_blank" class="panel-btn" style="background:#fee500; color:#3c1e1e;">💬 대구경북 찐맛집 소통방</a>
+                <button onclick="alert('준비중입니다!')" class="panel-btn" style="background:#2c3e50;">🎮 오늘 뭐 먹지?</button>
+                <a href="https://litt.ly/dazzlepeople" target="_blank" class="panel-btn" style="background:#e1306c;">📱 SNS 구경가기</a>
+            </div>
+            
+            <div style="padding: 20px 0;">
                 <button id="installBtn" class="panel-btn" style="display:none; background:#3498db; color:white; font-size:15px; box-shadow:0 4px 6px rgba(52, 152, 219, 0.3);">⬇️ 앱 설치하기</button>
             </div>
         </div>
-        <div class="faq-footer"><div class="company-box"><strong>다즐피플 (대표: 윤성호)</strong><br>사업자번호: 535-25-01793</div></div>
+        <div class="faq-footer"><div class="company-box"><strong>다즐피플 (대표: 윤성호)</strong><br>사업자번호: 535-25-01793<br>주소: 대구광역시 동구 송라로16길 42</div></div>
     </div>
 
-    <div id="infoPanel" class="info-panel"><div class="panel-header" id="panelHeader"><button class="panel-close" onclick="closePanel()">✕</button></div><div class="panel-body"><div><h2 class="panel-title" id="panelTitle"></h2><div class="panel-meta" id="panelMeta"></div></div><div class="rating-box"><div class="rating-top"><span class="total-star">⭐</span><div class="total-score" id="panelTotal">0.0</div></div><div class="review-text" id="panelReview"></div></div><div class="info-row"><span class="info-label">메뉴</span> <span class="info-text" id="panelMenu"></span></div><div class="info-row"><span class="info-label">주소</span> <span class="info-text" id="panelAddr"></span></div><a href="#" id="panelLink" target="_blank" class="panel-btn">네이버 플레이스 보기</a></div></div>
+    <div id="infoPanel" class="info-panel">
+        <div class="panel-header" id="panelHeader"><button class="panel-close" onclick="closePanel()">✕</button></div>
+        <div class="panel-body">
+            <div><h2 class="panel-title" id="panelTitle"></h2><div class="panel-meta" id="panelMeta"></div></div>
+            <div class="rating-box"><div class="rating-top"><span class="total-star">⭐</span><div class="total-score" id="panelTotal">0.0</div></div><div class="review-text" id="panelReview"></div></div>
+            <div class="info-row"><span class="info-label">메뉴</span> <span class="info-text" id="panelMenu"></span></div>
+            <div class="info-row"><span class="info-label">주소</span> <span class="info-text" id="panelAddr"></span></div>
+            <div id="dynamicBtnArea"></div>
+            <a href="#" id="panelLink" target="_blank" class="panel-btn">네이버 플레이스 보기</a>
+        </div>
+    </div>
+
+    <div id="profileModal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="modal-close-x" onclick="document.getElementById('profileModal').classList.remove('show')">×</button>
+            <div class="profile-header">
+                <img id="pImg" class="profile-img" src="">
+                <div id="pName" class="profile-name"></div>
+                <div id="pLevel" class="profile-level"></div>
+            </div>
+            <div style="font-size:12px; color:#555; display:flex; justify-content:space-between;"><span>EXP</span><span id="pExpText">0 / 100</span></div>
+            <div class="exp-bar-bg"><div id="pExpBar" class="exp-bar-fill"></div></div>
+            <h4 style="margin:15px 0 10px 0; border-bottom:1px solid #eee; padding-bottom:5px;">🚩 방문 인증 기록</h4>
+            <div id="pHistory" class="history-list"></div>
+            <button onclick="googleLogout()" style="width:100%; padding:10px; background:#f1f3f5; border:none; border-radius:8px; margin-top:15px; font-weight:bold; cursor:pointer;">로그아웃</button>
+        </div>
+    </div>
+
     <div id="selectModal" class="modal-overlay"><div class="modal-box"><button class="modal-close-x" onclick="closeSelectModal()">×</button><h3 class="modal-title" style="font-size:16px; margin-bottom:15px;">👇 매장을 선택해주세요</h3><div id="selectList" class="shop-select-list"></div></div></div>
     
     <div class="bottom-bar">
@@ -84,7 +128,7 @@
         var map = initMap();
         let allShops = [];
         let markerList = [];
-        const CACHE_KEY = "dazzle_shops_data_v7_complete"; 
+        const CACHE_KEY = "dazzle_shops_data_v12_restore_full"; // 캐시 버전 업데이트
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js?v=3.0').then(reg => {
@@ -106,7 +150,6 @@
         else if (isInApp) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("🚫 '더보기' -> '다른 브라우저로 열기'를 이용해주세요.")); } 
         else { window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; }); installBtn.addEventListener('click', (e) => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((r) => { if (r.outcome === 'accepted') installBtn.style.display = 'none'; deferredPrompt = null; }); } }); }
 
-        // 순서 고정 로직
         async function initApp() {
             await initTheme();
             await loadShopsData();
@@ -129,7 +172,6 @@
                 }
                 const allOpt = document.createElement('option'); allOpt.value = "ALL"; allOpt.innerText = "💎 전체 맛집 보기"; select.appendChild(allOpt); 
                 
-                // 🔥 첫 번째 테마가 있으면 그걸 선택 (기본값)
                 if (firstTheme) select.value = firstTheme;
                 else select.value = "ALL";
 
@@ -147,7 +189,6 @@
                     const parsed = JSON.parse(cachedData);
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         allShops = parsed;
-                        // 🔥 데이터 로딩 즉시 렌더링 시도!
                         checkAndRender();
                         document.getElementById('loadingOverlay').classList.add('fade-out');
                         isCacheUsed = true;
@@ -168,25 +209,17 @@
             }
         }
 
-        // 🔥 [완벽해결] 지도가 준비될 때까지 기다렸다가 찍는 로직 (기존 코드의 장점 복구)
         function checkAndRender() { 
             if (!map) return; 
-            
-            // 🔥 네이버 지도의 'bounds'가 준비되었는지 확인 (이게 F5 문제 해결의 열쇠!)
             const bounds = map.getBounds();
             if (!bounds || !(bounds instanceof naver.maps.LatLngBounds)) {
-                // 아직 준비 안 됐으면 0.1초 뒤에 다시 시도 (재귀 호출)
-                setTimeout(checkAndRender, 100);
-                return;
+                setTimeout(checkAndRender, 100); return;
             }
-
-            // 준비 완료되면 렌더링 시작
             updateVisibleMarkers(); 
         }
 
         function filterShops(shops) {
             var theme = $('#mainThemeSelect').val();
-            // 안전장치: 테마가 아직 세팅 안 됐으면 잠시 대기
             if (!theme) return []; 
 
             var region = $('#filterRegion').val();
@@ -227,11 +260,10 @@
         function updateVisibleMarkers() {
             if (!map) return;
             const bounds = map.getBounds();
-            // 🔥 여기도 안전장치 추가
             if (!bounds) { setTimeout(updateVisibleMarkers, 100); return; }
 
             const filtered = filterShops(allShops);
-            // 🔥 지도 화면 안에 있는 것만 필터링 (기존 로직 복구 -> 핀이 자연스럽게 뜨게 함)
+            // bounds.hasLatLng 체크 복구 (지도 내 마커만 표시)
             const visibleShops = filtered.filter(shop => {
                 if(!shop.lat || !shop.lng) return false;
                 const pos = new naver.maps.LatLng(shop.lat, shop.lng);
@@ -249,6 +281,15 @@
                 groups[key].push(shop);
             });
             for(const key in groups) {
+                // 순위 정렬
+                groups[key].sort((a, b) => {
+                    const pA = a.priority || 0; const pB = b.priority || 0;
+                    if (pA !== pB) return pB - pA;
+                    const hotA = a.isHot ? 1 : 0; const hotB = b.isHot ? 1 : 0;
+                    if (hotA !== hotB) return hotB - hotA;
+                    return 0;
+                });
+
                 const marker = createMarker(map, groups[key], function(clickedList) {
                     if (clickedList.length === 1) showPanel(clickedList[0]);
                     else showSelectModal(clickedList);
@@ -257,17 +298,137 @@
             }
         }
 
+        // 🔥 [완벽 복구] 상세 패널 UI (하트, 태그, 주차, GPS, 수정버튼)
         window.showPanel = function(shop) {
             document.getElementById('panelTitle').innerText = shop.name;
-            document.getElementById('panelTotal').innerText = shop.totalScore || "0.0";
+            const score = shop.totalScore || "0.0";
+            document.getElementById('panelTotal').innerHTML = `${score}<span class="total-max"> / 5.0</span>`;
             document.getElementById('panelMenu').innerText = shop.menu || "-";
             document.getElementById('panelAddr').innerText = shop.address || "-";
-            document.getElementById('panelReview').innerText = shop.desc || "내용 없음";
+            const reviewHtml = shop.desc ? `🗨️ "${shop.desc}"` : `🗨️ "아직 등록된 한줄평이 없어요."`;
+            document.getElementById('panelReview').innerHTML = reviewHtml;
+            
+            // 태그 표시
+            const metaBox = document.getElementById('panelMeta');
+            let metaHtml = '';
+            if(shop.category) (Array.isArray(shop.category) ? shop.category : [shop.category]).forEach(c => metaHtml += `<span class="panel-tag">#${c}</span>`);
+            if(shop.purpose) (Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose]).forEach(p => metaHtml += `<span class="panel-tag">#${p}</span>`);
+            metaBox.innerHTML = metaHtml;
+
             const header = document.getElementById('panelHeader');
-            if (shop.imageUrl) header.style.backgroundImage = `url('${shop.imageUrl}')`;
-            else header.style.backgroundColor = '#ddd';
+            if (shop.imageUrl) { header.style.backgroundImage = `url('${shop.imageUrl}')`; } 
+            else { header.style.backgroundImage = 'none'; header.style.backgroundColor = '#ddd'; }
+            
+            let parkingBadge = '';
+            if (shop.parking) { parkingBadge = `<div class="parking-badge">${shop.parking}</div>`; }
+            
+            // 하트 버튼
+            const user = auth.currentUser;
+            const likedList = shop.likedBy || [];
+            const isLiked = user && likedList.includes(user.uid);
+            const heartIcon = isLiked ? "❤️" : "🤍";
+            const likeCount = likedList.length;
+
+            const heartHtml = `
+                <div class="like-btn-wrapper">
+                    <button id="heartBtn" class="heart-btn ${isLiked?'active':''}" onclick="toggleLike('${shop.id}')">${heartIcon}</button>
+                    <span id="likeCountSpan" class="like-count">${likeCount}</span>
+                </div>
+            `;
+
+            header.innerHTML = `<button class="panel-close" onclick="closePanel()">✕</button>${parkingBadge}${heartHtml}`;
+
+            // GPS 버튼 + 사장님 수정 버튼
+            const dynamicBtnArea = document.getElementById('dynamicBtnArea');
+            dynamicBtnArea.innerHTML = `<button class="panel-btn" style="background:#e74c3c; margin-bottom:5px;" onclick="verifyVisitByGPS(${shop.lat}, ${shop.lng}, '${shop.name}')">📍 <b>여기 왔어요! (GPS 인증)</b></button>`;
+            
+            // 🔥 [사장님 체크] 내 UID와 가게 OwnerId가 같으면 수정 버튼 표시
+            if (user && shop.ownerId && shop.ownerId === user.uid) {
+                dynamicBtnArea.innerHTML += `<button class="panel-btn" style="background:#2c3e50; margin-bottom:5px;" onclick="location.href='admin_dz_map11.html'">🔧 내 가게 정보 수정하기</button>`;
+            }
+
+            const btnLink = document.getElementById('panelLink');
+            if (shop.link) { btnLink.href = shop.link; btnLink.style.display = 'block'; btnLink.innerText = '네이버 플레이스 보기'; } 
+            else { btnLink.href = '#'; btnLink.style.display = 'none'; }
+
+            document.getElementById('faqPanel').classList.remove('show');
+            document.getElementById('selectModal').classList.remove('show');
             document.getElementById('infoPanel').classList.add('show');
         }
+
+        window.toggleLike = async function(shopId) {
+            const user = auth.currentUser;
+            if(!user) return alert("로그인이 필요한 기능입니다. 😅");
+            const heartBtn = document.getElementById('heartBtn');
+            const countSpan = document.getElementById('likeCountSpan');
+            const shopRef = doc(db, "shops", shopId);
+            const isLiked = heartBtn.innerText === "❤️";
+            
+            if(isLiked) { heartBtn.innerText = "🤍"; heartBtn.classList.remove('active'); countSpan.innerText = parseInt(countSpan.innerText) - 1; } 
+            else { heartBtn.innerText = "❤️"; heartBtn.classList.add('active'); countSpan.innerText = parseInt(countSpan.innerText) + 1; }
+
+            try {
+                if(isLiked) await updateDoc(shopRef, { likedBy: arrayRemove(user.uid) });
+                else await updateDoc(shopRef, { likedBy: arrayUnion(user.uid) });
+                const target = allShops.find(s => s.id === shopId);
+                if(target) {
+                    if(!target.likedBy) target.likedBy = [];
+                    if(isLiked) target.likedBy = target.likedBy.filter(uid => uid !== user.uid);
+                    else target.likedBy.push(user.uid);
+                }
+            } catch(e) { console.error(e); heartBtn.innerText = isLiked ? "❤️" : "🤍"; }
+        }
+
+        // GPS 인증 로직
+        window.verifyVisitByGPS = function(shopLat, shopLng, shopName) {
+            const user = auth.currentUser;
+            if(!user) return alert("로그인 후 인증 가능합니다.");
+            const btn = event.target; const originalText = btn.innerHTML;
+            const userRef = doc(db, "users", user.uid);
+            getDoc(userRef).then(snap => {
+                if(snap.exists()) {
+                    const data = snap.data();
+                    const last = data.lastCheckIn ? data.lastCheckIn.toMillis() : 0;
+                    if ((new Date().getTime() - last) / (1000 * 60) < 60) return alert("1시간에 1번만 인증 가능해요!");
+                    if(!navigator.geolocation) return alert("GPS 권한이 필요합니다.");
+                    btn.innerText = "📡 위치 확인 중..."; btn.disabled = true;
+                    navigator.geolocation.getCurrentPosition(async (pos) => {
+                        const dist = getDistanceFromLatLonInKm(pos.coords.latitude, pos.coords.longitude, shopLat, shopLng);
+                        if(dist < 100) {
+                            await updateDoc(userRef, { exp: increment(10), lastCheckIn: new Date() });
+                            alert(`🎉 인증 성공! 경험치 +10`); location.reload();
+                        } else {
+                            alert(`매장 근처가 아닙니다. (거리: ${Math.round(dist)}m)`); btn.innerHTML = originalText; btn.disabled = false;
+                        }
+                    }, () => { alert("위치 실패"); btn.innerHTML = originalText; btn.disabled = false; });
+                }
+            });
+        }
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            var R=6371; var dLat=deg2rad(lat2-lat1); var dLon=deg2rad(lon2-lon1);
+            var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(deg2rad(lat1))*Math.cos(deg2rad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
+            var c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); return R*c*1000;
+        }
+        function deg2rad(deg) { return deg*(Math.PI/180); }
+
+        // 프로필 모달 열기
+        window.openProfileModal = async function() {
+            const user = auth.currentUser;
+            if(!user) return;
+            const userRef = doc(db, "users", user.uid);
+            const snap = await getDoc(userRef);
+            if(snap.exists()) {
+                const data = snap.data();
+                const lv = 1 + Math.floor((data.exp||0)/10);
+                document.getElementById('pImg').src = user.photoURL;
+                document.getElementById('pName').innerText = user.displayName;
+                document.getElementById('pLevel').innerText = `LV.${lv} (미식가)`;
+                document.getElementById('pExpText').innerText = `${data.exp||0} EXP`;
+                document.getElementById('pExpBar').style.width = Math.min((data.exp%10)*10, 100) + '%';
+                document.getElementById('profileModal').classList.add('show');
+            }
+        }
+
         window.closePanel = function() { document.getElementById('infoPanel').classList.remove('show'); }
         window.closeSelectModal = function() { document.getElementById('selectModal').classList.remove('show'); }
         window.showSelectModal = function(list) {
@@ -301,7 +462,6 @@
             updateVisibleMarkers();
         }
         
-        // 지도 움직이면 마커 다시 계산 (이벤트 리스너 복구)
         let idleTimer;
         naver.maps.Event.addListener(map, 'idle', function() { 
             clearTimeout(idleTimer); 
