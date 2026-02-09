@@ -3,31 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>관리자 모드 (접속제한 해제)</title>
+    <title>관리자 모드 (기능 완전 복구)</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=krsv42ftzf&submodules=geocoder"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        .admin-search-input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 13px; width: 120px; outline: none; color: #333; }
-        .admin-select { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; color: #333; background: white; cursor: pointer; }
-        .search-box-wrapper { gap: 5px; flex-wrap: wrap; }
-        .bulk-textarea { width: 100%; height: 200px; font-size: 12px; font-family: monospace; padding: 10px; border: 1px solid #ccc; background: #f4f4f4; margin-bottom: 10px; }
-        .bulk-status { font-size: 12px; color: #e74c3c; margin-top: 5px; font-weight: bold; max-height: 100px; overflow-y: auto; }
-        .shop-select-item { display: flex; justify-content: space-between; align-items: center; }
-        .shop-select-info { flex: 1; cursor: pointer; }
-        .dup-msg { font-size: 12px; margin-left: 10px; font-weight: bold; }
-        .check-item { display: inline-flex; align-items: center; margin-right: 10px; margin-bottom: 5px; cursor: pointer; font-size: 13px; }
-        .check-item input { margin-right: 5px; cursor: pointer; }
-        .hot-check-wrapper { background: #ffe3e3; border: 2px solid #ff6b6b; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-        .hot-check-label { font-weight: bold; color: #c0392b; font-size: 14px; display: flex; align-items: center; gap: 5px; cursor: pointer; }
-        .hot-check-input { width: 20px; height: 20px; cursor: pointer; accent-color: #e74c3c; }
+        .admin-search-input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 13px; width: 120px; outline: none; }
+        .admin-select { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; background: white; cursor: pointer; }
         .admin-theme-panel { position: relative; width: 100%; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); padding: 10px; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; border: 2px solid #2c3e50; z-index: 100; }
-        .theme-control-row { display: flex; gap: 5px; align-items: center; }
-        .theme-mode-badge { background: #e74c3c; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; animation: blink 2s infinite; display: none; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-        .toast-msg { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; font-size: 14px; z-index: 2000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-        .toast-msg.show { opacity: 1; }
+        .bulk-textarea { width: 100%; height: 200px; font-size: 12px; font-family: monospace; padding: 10px; background: #f4f4f4; border: 1px solid #ccc; }
+        .bulk-status { font-size: 12px; color: #e74c3c; margin-top: 5px; font-weight: bold; max-height: 100px; overflow-y: auto; }
+        #googleLoginBtn { background: #4285F4; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .theme-tagged { border: 3px solid #2ecc71 !important; background-color: #e8f8f5 !important; z-index: 8000 !important; transform: translate(-50%, -100%) scale(1.1) !important; }
+        .tag-check-icon { position: absolute; top: -12px; right: -12px; background: #2ecc71; color: white; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 14px; font-weight: bold; border: 2px solid white; z-index: 9000; }
+        .check-item { display: inline-block; margin-right: 10px; margin-bottom: 5px; font-size: 13px; cursor: pointer; }
+        .shop-select-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .shop-select-item:hover { background: #f9f9f9; }
     </style>
 </head>
 <body>
@@ -35,8 +27,10 @@
         <div class="search-box-wrapper" style="background:#c0392b; color:white; flex-direction:row; align-items:center; padding: 10px;">
             <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; flex:1;">
                 <strong style="white-space:nowrap;">🔒 관리</strong>
+                <button id="googleLoginBtn" onclick="tryLogin()">G 로그인</button>
                 <select id="adminRegion" class="admin-select" onchange="applyAdminFilters()"><option value="">📍 지역 전체</option><option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option></select>
-                <select id="adminCategory" class="admin-select" onchange="applyAdminFilters()"><option value="">🍜 업종 전체</option><option value="한식">한식</option><option value="중식">중식</option><option value="일식">일식</option><option value="양식">양식</option><option value="분식">분식</option><option value="고기/구이">고기/구이</option><option value="회/해산물">회/해산물</option><option value="아시안">아시안</option><option value="술집">술집</option><option value="카페/디저트">카페/디저트</option><option value="빵집">빵집</option><option value="패스트푸드">패스트푸드</option><option value="포장/배달">포장/배달</option><option value="주차장">🚗 주차장</option></select>
+                <select id="adminCategory" class="admin-select" onchange="applyAdminFilters()"><option value="">🍜 업종 전체</option><option value="주차장">🚗 주차장</option><option value="한식">한식</option><option value="중식">중식</option><option value="일식">일식</option><option value="양식">양식</option><option value="분식">분식</option><option value="고기/구이">고기/구이</option><option value="회/해산물">회/해산물</option><option value="아시안">아시안</option><option value="술집">술집</option><option value="카페/디저트">카페/디저트</option><option value="빵집">빵집</option><option value="패스트푸드">패스트푸드</option><option value="포장/배달">포장/배달</option></select>
+                <select id="adminPurpose" class="admin-select" onchange="applyAdminFilters()"><option value="">✨ 분위기 전체</option><option value="설날무료">설날무료</option><option value="노포">노포</option><option value="데이트">데이트</option><option value="단체회식">단체회식</option><option value="혼밥/혼술">혼밥/혼술</option><option value="무한리필">무한리필</option><option value="이색맛집">이색맛집</option><option value="뷰맛집">뷰맛집</option><option value="상견례">상견례</option><option value="야간영업">야간영업</option></select>
                 <input type="text" id="adminSearch" class="admin-search-input" placeholder="🔍 이름 검색" onkeyup="applyAdminFilters()">
             </div>
             <div style="display:flex; gap:5px;">
@@ -57,9 +51,32 @@
         </div>
     </div>
     
-    <div id="toast" class="toast-msg">처리되었습니다</div>
-    <div class="admin-notice" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(192, 57, 43, 0.9); color: white; padding: 10px 20px; border-radius: 30px; font-size: 13px; z-index: 200; pointer-events: none; text-align: center; width: 80%;">지도 클릭 또는 상단 버튼 사용</div>
     <div id="map"></div>
+    <div id="toast" class="toast-msg">처리되었습니다</div>
+
+    <div id="bulkModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:600px;">
+            <button class="modal-close-x" onclick="closeBulkModal()">×</button>
+            <h3 class="modal-title">⚡ 만능 이벤트 일괄 등록</h3>
+            <div style="background:#ffe3e3; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ff6b6b;">
+                <p style="font-size:12px; color:#c0392b; font-weight:bold; margin:0 0 5px 0;">🚨 데이터 초기화 (신중하게!)</p>
+                <button onclick="deleteAllEventData()" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ 이 카테고리 데이터 모두 삭제</button>
+            </div>
+            <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;">
+                <div style="margin-bottom:10px;">
+                    <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">🏷️ 테마 이름 (지도 메뉴에 뜰 이름)</label>
+                    <input type="text" id="bulkThemeName" class="form-input" value="02. 테마 이름" style="font-weight:bold; color:#e74c3c;">
+                </div>
+                <div class="form-grid">
+                    <div><label style="font-size:12px; font-weight:bold;">📂 카테고리</label><input type="text" id="bulkCategory" class="form-input" value="주차장"></div>
+                    <div><label style="font-size:12px; font-weight:bold;">✨ 목적/태그</label><input type="text" id="bulkPurpose" class="form-input" value="설날무료"></div>
+                </div>
+            </div>
+            <textarea id="bulkDataInput" class="bulk-textarea" placeholder='[JSON 데이터 붙여넣기]'></textarea>
+            <div id="bulkStatus" class="bulk-status"></div>
+            <div class="modal-btns"><button class="btn-save" style="background:#2c3e50; color:white;" onclick="processBulkData()">🚀 등록 실행</button></div>
+        </div>
+    </div>
 
     <div id="selectModal" class="modal-overlay">
         <div class="modal-box">
@@ -79,8 +96,8 @@
                 <label class="form-label">👑 사장님 UID 연결 (선택)</label>
                 <input type="text" id="shopOwnerId" class="form-input" placeholder="유저에게 받은 UID 붙여넣기" style="font-family:monospace; font-size:12px;">
             </div>
-            <div class="hot-check-wrapper"><label class="hot-check-label"><input type="checkbox" id="shopIsHot" class="hot-check-input"> 🔥 지도에서 강조하기 (테두리 + 불꽃)</label></div>
-            <div class="form-grid">
+            <div class="hot-check-wrapper" style="margin:10px 0; background:#ffe3e3; padding:10px; border-radius:5px;"><label class="hot-check-label" style="font-weight:bold; color:#c0392b;"><input type="checkbox" id="shopIsHot" class="hot-check-input"> 🔥 지도에서 강조하기 (테두리 + 불꽃)</label></div>
+            <div class="form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <div class="form-group"><label class="form-label">📍 지역 (필수)</label><select id="shopRegion" class="form-input"><option value="">선택하세요</option><option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option></select></div>
                 <div class="form-group"><label class="form-label">상권</label><input type="text" id="shopArea" class="form-input" autocomplete="off"></div>
             </div>
@@ -93,61 +110,19 @@
             <div class="form-group"><label class="form-label">네이버 링크</label><input type="text" id="shopLink" class="form-input"></div>
             <div class="form-group"><label class="form-label">업종</label><div class="multi-select-container" id="categoryContainer"></div></div>
             <div class="form-group"><label class="form-label">목적</label><div class="multi-select-container" id="purposeContainer"></div></div>
-            <div class="modal-btns"><button class="btn-delete" id="btnDelete" onclick="deleteCurrentShop()">삭제</button><button class="btn-save" onclick="saveShop()">저장</button></div>
-        </div>
-    </div>
-
-    <div id="bulkModal" class="modal-overlay">
-        <div class="modal-box" style="max-width:600px;">
-            <button class="modal-close-x" onclick="closeBulkModal()">×</button>
-            <h3 class="modal-title">⚡ 만능 이벤트 일괄 등록</h3>
-            
-            <div style="background:#ffe3e3; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ff6b6b;">
-                <p style="font-size:12px; color:#c0392b; font-weight:bold; margin:0 0 5px 0;">🚨 데이터 초기화 (잘못 등록했을 때만!)</p>
-                <button onclick="deleteAllEventData()" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ 이 카테고리 데이터 모두 삭제</button>
-            </div>
-
-            <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;">
-                <div style="margin-bottom:10px;">
-                    <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">🏷️ 테마 이름 (지도 메뉴에 뜰 이름)</label>
-                    <input type="text" id="bulkThemeName" class="form-input" value="01. 🚗 2026 설 무료주차장" style="font-weight:bold; color:#e74c3c;">
-                </div>
-                <div class="form-grid">
-                    <div>
-                        <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">📂 카테고리 (분류)</label>
-                        <input type="text" id="bulkCategory" class="form-input" value="주차장" placeholder="예: 축제, 팝업스토어">
-                    </div>
-                    <div>
-                        <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">✨ 목적/태그</label>
-                        <input type="text" id="bulkPurpose" class="form-input" value="설날무료" placeholder="예: 데이트, 포토존">
-                    </div>
-                </div>
-            </div>
-
-            <textarea id="bulkDataInput" class="bulk-textarea" placeholder='[JSON 데이터 붙여넣기]'></textarea>
-            <div id="bulkStatus" class="bulk-status"></div>
-            <div class="modal-btns">
-                <button class="btn-save" style="background:#2c3e50; color:white;" onclick="processBulkData()">🚀 등록 실행</button>
+            <div class="modal-btns" style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn-delete" id="btnDelete" onclick="deleteCurrentShop()" style="flex:1; background:#e74c3c; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">삭제</button>
+                <button class="btn-save" onclick="saveShop()" style="flex:1; background:#2c3e50; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">저장</button>
             </div>
         </div>
     </div>
 
     <script type="module">
-        import { db, initMap, createMarker, auth, onAuthStateChanged } from "./common.js";
+        import { db, initMap, createMarker, auth, googleProvider, signInWithPopup, onAuthStateChanged } from "./common.js";
         import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, getDocs, setDoc, getDoc, arrayUnion, arrayRemove, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 🔥 [변경점] 단순 비밀번호만 통과하면 접속 허용 (데이터 읽기 가능)
         var password = prompt("관리자 비밀번호:");
         if (password !== "2364") { document.body.innerHTML = "⛔ 접근 거부"; throw new Error("비밀번호 오류"); }
-
-        // 🔥 [알림] 로그인 상태만 조용히 체크 (쫓아내지 않음)
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                showToast(`✅ ${user.displayName}님 로그인됨 (수정 가능)`);
-            } else {
-                showToast("⚠️ 로그인 안 됨 (조회만 가능, 수정 불가)");
-            }
-        });
 
         var map = initMap();
         let markerList = [];
@@ -157,136 +132,220 @@
         const CAT_LIST = ['한식', '중식', '일식', '양식', '분식', '고기/구이', '회/해산물', '아시안', '술집', '카페/디저트', '빵집', '패스트푸드', '포장/배달', '주차장'];
         const PUR_LIST = ['노포', '데이트', '단체회식', '혼밥/혼술', '무한리필', '이색맛집', '뷰맛집', '상견례', '야간영업', '설날무료'];
 
-        window.openBulkModal = function() { $('#bulkDataInput').val(''); $('#bulkStatus').html(''); $('#bulkModal').addClass('show'); }
-        window.closeModal = function() { $('#shopModal').removeClass('show'); }
+        // 🔥 버튼 기능 전역 할당
+        window.openBulkModal = function() { $('#bulkModal').addClass('show'); $('#bulkStatus').html(''); }
         window.closeBulkModal = function() { $('#bulkModal').removeClass('show'); }
+        window.closeModal = function() { $('#shopModal').removeClass('show'); }
         window.closeSelectModal = function() { $('#selectModal').removeClass('show'); }
+        window.tryLogin = function() { signInWithPopup(auth, googleProvider).then(()=>location.reload()).catch(e=>alert(e.message)); }
 
-        function renderCheckboxes(containerId, name, items, selected = []) { const container = document.getElementById(containerId); container.innerHTML = ''; const selectedList = Array.isArray(selected) ? selected : (selected ? [selected] : []); items.forEach(item => { const isChecked = selectedList.includes(item); const label = document.createElement('label'); label.className = 'check-item'; label.innerHTML = `<input type="checkbox" name="${name}" value="${item}" ${isChecked ? 'checked' : ''}> ${item}`; container.appendChild(label); }); }
-        async function loadThemes() { const docRef = doc(db, "meta", "themes"); const docSnap = await getDoc(docRef); const select = document.getElementById('adminThemeSelect'); select.innerHTML = '<option value="">(기본) 업체 정보 수정 모드</option>'; if (docSnap.exists()) { themeList = docSnap.data().list || []; themeList.sort(); themeList.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = `📂 ${t}`; select.appendChild(opt); }); } }
+        // 테마 로드
+        async function loadThemes() { 
+            try {
+                const docRef = doc(db, "meta", "themes"); const docSnap = await getDoc(docRef); 
+                const select = document.getElementById('adminThemeSelect'); 
+                select.innerHTML = '<option value="">(기본) 업체 정보 수정 모드</option>'; 
+                if (docSnap.exists()) { 
+                    themeList = docSnap.data().list || []; themeList.sort(); 
+                    themeList.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = `📂 ${t}`; select.appendChild(opt); }); 
+                } 
+            } catch(e) { console.error(e); }
+        }
         loadThemes();
-        window.toggleThemeMode = function() { const val = document.getElementById('adminThemeSelect').value; currentThemeMode = val; const badge = document.getElementById('themeModeStatus'); if (val) { badge.style.display = 'block'; badge.innerHTML = `⚡ <b>[${val}]</b> 태깅 모드 ON<br>핀을 클릭하면 즉시 추가/제거됩니다.`; } else { badge.style.display = 'none'; } }
-        window.addNewTheme = async function() { const name = prompt("새로운 테마 이름:"); if(!name) return; if(themeList.includes(name)) return alert("중복"); themeList.push(name); themeList.sort(); await setDoc(doc(db, "meta", "themes"), { list: themeList }, { merge: true }); alert("추가됨"); loadThemes(); }
-        window.renameTheme = async function() { const oldName = $('#adminThemeSelect').val(); if(!oldName) return alert("선택필요"); const newName = prompt("새 이름:", oldName); if(!newName || newName===oldName) return; themeList = themeList.map(t => t === oldName ? newName : t); themeList.sort(); await setDoc(doc(db, "meta", "themes"), { list: themeList }); alert("변경됨"); loadThemes(); }
-        window.deleteTheme = async function() { const target = $('#adminThemeSelect').val(); if(!target) return alert("선택필요"); if(!confirm("삭제합니까?")) return; await updateDoc(doc(db, "meta", "themes"), { list: arrayRemove(target) }); alert("삭제됨"); loadThemes(); $('#adminThemeSelect').val(""); toggleThemeMode(); }
-        function handleMarkerClick(clickedList) { if (currentThemeMode) { if(clickedList.length > 1) showSelectModal(clickedList, true); else toggleShopTheme(clickedList[0]); } else { if (clickedList.length === 1) openEditModal(clickedList[0]); else showSelectModal(clickedList, false); } }
-        window.showSelectModal = function(list, isThemeMode) { const container = document.getElementById('selectList'); container.innerHTML = ''; list.forEach(shop => { const div = document.createElement('div'); div.className = 'shop-select-item'; div.innerHTML = `<div class="shop-select-info"><span class="shop-select-name">${shop.name}</span></div>`; div.onclick = () => { closeSelectModal(); if(isThemeMode) toggleShopTheme(shop); else openEditModal(shop); }; container.appendChild(div); }); $('#selectModal').addClass('show'); }
-        async function toggleShopTheme(shop) { const shopRef = doc(db, "shops", shop.id); const isAdded = shop.themes && shop.themes.includes(currentThemeMode); try { if(isAdded) { await updateDoc(shopRef, { themes: arrayRemove(currentThemeMode) }); showToast(`➖ 제거됨`); } else { await updateDoc(shopRef, { themes: arrayUnion(currentThemeMode) }); showToast(`➕ 추가됨`); } } catch(e){alert("로그인이 필요합니다!\n" + e.message);} }
-        
-        function showToast(msg) { 
-            const el = document.getElementById('toast'); 
-            if (!el) return; 
-            el.innerText = msg; 
-            el.classList.add('show'); 
-            setTimeout(() => el.classList.remove('show'), 2000); 
-        }
-        
-        onSnapshot(collection(db, "shops"), (snapshot) => { 
-            allShopsData = []; 
-            snapshot.forEach(doc => allShopsData.push({ id: doc.id, ...doc.data() })); 
-            
-            if(allShopsData.length === 0) {
-                showToast("⚠️ 데이터 0건 (불러올 내용 없음)");
-            } else {
-                showToast(`📂 총 ${allShopsData.length}개 로드 완료!`);
-            }
-            applyAdminFilters(); 
-        });
 
-        window.applyAdminFilters = function() { 
-            var region = $('#adminRegion').val(); 
-            var category = $('#adminCategory').val(); 
-            var purpose = $('#adminPurpose').val(); 
-            var keyword = $('#adminSearch').val().toLowerCase().replace(/\s+/g, ''); 
-            
-            var filtered = allShopsData.filter(shop => { 
-                var matchRegion = (region === "") || (shop.region === region); 
-                var shopCats = Array.isArray(shop.category) ? shop.category : [shop.category]; 
-                var matchCategory = (category === "") || shopCats.includes(category); 
-                var shopPurps = Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose]; 
-                var matchPurpose = (purpose === "") || shopPurps.includes(purpose); 
-                var catString = shopCats.join(" ") || "";
-                var searchableText = (shop.name + " " + (shop.menu || "") + " " + (shop.area || "") + " " + (shop.address || "") + " " + catString).toLowerCase().replace(/\s+/g, ''); 
-                var matchKeyword = (keyword === "") || searchableText.includes(keyword); 
-                return matchRegion && matchCategory && matchPurpose && matchKeyword; 
+        // 🔥 [복구됨] 추가/수정 모달 기능
+        window.openAddModal = function() { 
+            $('#shopId').val(''); $('input, textarea, select').val(''); $('#shopIsHot').prop('checked', false); 
+            $('#shopTotalScore').val('0.0');
+            $('#dupMsg').text('');
+            renderCheckboxes('categoryContainer', 'category', CAT_LIST, []); 
+            renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, []); 
+            $('#btnDelete').hide(); 
+            $('.modal-title').text('✨ 새 업체 추가'); // 제목 변경 확실하게
+            $('#shopModal').addClass('show'); 
+        }
+
+        window.openEditModal = function(d) { 
+            $('#shopId').val(d.id); $('#shopName').val(d.name); $('#shopOwnerId').val(d.ownerId || ""); 
+            $('#shopRegion').val(d.region || ""); $('#shopArea').val(d.area); $('#shopMenu').val(d.menu); 
+            $('#shopIsHot').prop('checked', d.isHot === true); $('#shopParking').val(d.parking || ""); 
+            $('#shopTotalScore').val(d.totalScore); $('#shopDesc').val(d.desc); $('#shopAddress').val(d.address); 
+            $('#shopImage').val(d.imageUrl); $('#shopLink').val(d.link); $('#shopLat').val(d.lat); $('#shopLng').val(d.lng); 
+            $('#dupMsg').text(''); 
+            renderCheckboxes('categoryContainer', 'category', CAT_LIST, d.category); 
+            renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, d.purpose); 
+            $('#btnDelete').show(); 
+            $('.modal-title').text('📝 정보 수정'); // 제목 변경
+            $('#shopModal').addClass('show'); 
+        }
+
+        function renderCheckboxes(containerId, name, items, selected = []) { 
+            const container = document.getElementById(containerId); container.innerHTML = ''; 
+            const selectedList = Array.isArray(selected) ? selected : (selected ? [selected] : []); 
+            items.forEach(item => { 
+                const isChecked = selectedList.includes(item); 
+                const label = document.createElement('label'); label.className = 'check-item'; 
+                label.innerHTML = `<input type="checkbox" name="${name}" value="${item}" ${isChecked ? 'checked' : ''}> ${item}`; 
+                container.appendChild(label); 
             }); 
-            renderMarkers(filtered); 
         }
-        function renderMarkers(shops) { markerList.forEach(m => m.setMap(null)); markerList = []; const groups = {}; shops.forEach(s => { if(!s.lat)return; const k=s.lat.toFixed(5)+","+s.lng.toFixed(5); if(!groups[k])groups[k]=[]; groups[k].push(s); }); for(const k in groups) { var marker = createMarker(map, groups[k], handleMarkerClick); if (marker) markerList.push(marker); } }
-        window.openEditModal = function(d) { $('#shopId').val(d.id); $('#shopName').val(d.name); $('#shopOwnerId').val(d.ownerId || ""); $('#shopRegion').val(d.region || ""); $('#shopArea').val(d.area); $('#shopMenu').val(d.menu); $('#shopIsHot').prop('checked', d.isHot === true); $('#shopParking').val(d.parking || ""); $('#shopTotalScore').val(d.totalScore); $('#shopDesc').val(d.desc); $('#shopAddress').val(d.address); $('#shopImage').val(d.imageUrl); $('#shopLink').val(d.link); $('#shopLat').val(d.lat); $('#shopLng').val(d.lng); $('#dupMsg').text(''); renderCheckboxes('categoryContainer', 'category', CAT_LIST, d.category); renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, d.purpose); $('#btnDelete').show(); $('.modal-title').text('📝 정보 수정'); $('#shopModal').addClass('show'); }
-        window.openAddModal = function() { $('#shopId').val(''); $('input, textarea, select').val(''); $('#shopIsHot').prop('checked', false); renderCheckboxes('categoryContainer', 'category', CAT_LIST, []); renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, []); $('#btnDelete').hide(); $('.modal-title').text('✨ 새 업체 추가'); $('#shopModal').addClass('show'); }
+
+        // 🔥 [복구됨] 저장/삭제 기능
         async function geocodeAddress(addr) { return new Promise(r=>{ naver.maps.Service.geocode({query:addr}, (s,res)=>{ if(s===naver.maps.Service.Status.OK && res.v2.addresses.length>0) r({lat:parseFloat(res.v2.addresses[0].y), lng:parseFloat(res.v2.addresses[0].x)}); else r(null); }); }); }
-        window.saveShop = async function() { var id = $('#shopId').val(); var name = $('#shopName').val().trim(); if (!name) { alert("⛔ 업체명을 입력해주세요!"); $('#shopName').focus(); return; } var region = $('#shopRegion').val(); if (!region) { alert("⛔ 지역을 선택해주세요!"); $('#shopRegion').focus(); return; } var lat = parseFloat($('#shopLat').val()); var lng = parseFloat($('#shopLng').val()); var address = $('#shopAddress').val().trim(); if (isNaN(lat) || isNaN(lng) || lat===0) { if (!address) { alert("주소 필수"); return; } const res = await geocodeAddress(address); if(res) { lat=res.lat; lng=res.lng; $('#shopLat').val(lat); $('#shopLng').val(lng); } else { alert("주소 찾기 실패"); return; } } let rawScore = parseFloat($('#shopTotalScore').val()) || 0; if (rawScore > 5) { alert("최대 5점입니다."); return; } var data = { name: name, category: [], purpose: [], region: region, area: $('#shopArea').val(), menu: $('#shopMenu').val(), isHot: $('#shopIsHot').is(':checked'), parking: $('#shopParking').val(), totalScore: rawScore, desc: $('#shopDesc').val(), address: address, imageUrl: $('#shopImage').val(), link: $('#shopLink').val(), ownerId: $('#shopOwnerId').val().trim(), lat: lat, lng: lng, updatedAt: new Date(), themes: allShopsData.find(s => s.id === id)?.themes || [] }; document.querySelectorAll('input[name="category"]').forEach(node => { if(node.checked) data.category.push(node.value); }); document.querySelectorAll('input[name="purpose"]').forEach(node => { if(node.checked) data.purpose.push(node.value); }); try { if (id) { await updateDoc(doc(db, "shops", id), data); alert("✅ 수정 완료!"); } else { data.createdAt = new Date(); await addDoc(collection(db, "shops"), data); alert("✅ 등록 완료!"); } closeModal(); } catch (e) { alert("저장 실패 (로그인 필요): " + e.message); } }
-        window.deleteCurrentShop = async function() { var id = $('#shopId').val(); if(!id) return; if(confirm("삭제?")) { try{ await deleteDoc(doc(db,"shops",id)); alert("삭제됨"); closeModal(); }catch(e){alert("실패 (로그인 필요): " + e.message);} } }
-        naver.maps.Event.addListener(map, 'click', function(e) { if(currentThemeMode) return; $('#shopId').val(''); $('input, textarea, select').val(''); $('#shopIsHot').prop('checked', false); renderCheckboxes('categoryContainer', 'category', CAT_LIST, []); renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, []); $('#shopLat').val(e.coord.lat()); $('#shopLng').val(e.coord.lng()); $('#dupMsg').text(''); $('#btnDelete').hide(); $('.modal-title').text('✨ 새 업체 등록'); $('#shopModal').addClass('show'); });
+        
+        window.saveShop = async function() { 
+            var id = $('#shopId').val(); var name = $('#shopName').val().trim(); 
+            if (!name) { alert("⛔ 업체명을 입력해주세요!"); $('#shopName').focus(); return; } 
+            var region = $('#shopRegion').val(); 
+            if (!region) { alert("⛔ 지역을 선택해주세요!"); $('#shopRegion').focus(); return; } 
+            var lat = parseFloat($('#shopLat').val()); var lng = parseFloat($('#shopLng').val()); var address = $('#shopAddress').val().trim(); 
+            if (isNaN(lat) || isNaN(lng) || lat===0) { if (!address) { alert("주소 필수"); return; } const res = await geocodeAddress(address); if(res) { lat=res.lat; lng=res.lng; $('#shopLat').val(lat); $('#shopLng').val(lng); } else { alert("주소 찾기 실패"); return; } } 
+            let rawScore = parseFloat($('#shopTotalScore').val()) || 0; if (rawScore > 5) { alert("최대 5점입니다."); return; } 
+            
+            var data = { 
+                name: name, category: [], purpose: [], region: region, area: $('#shopArea').val(), menu: $('#shopMenu').val(), 
+                isHot: $('#shopIsHot').is(':checked'), parking: $('#shopParking').val(), totalScore: rawScore, 
+                desc: $('#shopDesc').val(), address: address, imageUrl: $('#shopImage').val(), link: $('#shopLink').val(), 
+                ownerId: $('#shopOwnerId').val().trim(), lat: lat, lng: lng, updatedAt: new Date(), 
+                themes: allShopsData.find(s => s.id === id)?.themes || [] 
+            }; 
+            document.querySelectorAll('input[name="category"]').forEach(node => { if(node.checked) data.category.push(node.value); }); 
+            document.querySelectorAll('input[name="purpose"]').forEach(node => { if(node.checked) data.purpose.push(node.value); }); 
+            
+            try { 
+                if (id) { await updateDoc(doc(db, "shops", id), data); alert("✅ 수정 완료!"); } 
+                else { data.createdAt = new Date(); await addDoc(collection(db, "shops"), data); alert("✅ 등록 완료!"); } 
+                closeModal(); 
+            } catch (e) { alert("저장 실패: " + e.message); } 
+        }
+        
+        window.deleteCurrentShop = async function() { 
+            var id = $('#shopId').val(); if(!id) return; 
+            if(confirm("삭제?")) { try{ await deleteDoc(doc(db,"shops",id)); alert("삭제됨"); closeModal(); }catch(e){alert("실패");} } 
+        }
 
+        // 테마 관리
+        window.toggleThemeMode = function() {
+            currentThemeMode = $('#adminThemeSelect').val();
+            document.getElementById('themeModeStatus').style.display = currentThemeMode ? 'block' : 'none';
+            applyAdminFilters();
+        }
+        window.addNewTheme = async function() {
+            const name = prompt("새로운 테마 이름:"); if(!name) return; 
+            if(themeList.includes(name)) return alert("이미 있는 이름입니다.");
+            themeList.push(name); themeList.sort();
+            try { await setDoc(doc(db, "meta", "themes"), { list: themeList }, { merge: true }); alert("추가됨"); loadThemes(); }
+            catch(e) { alert("추가 실패! (규칙 확인 필요): " + e.message); }
+        }
+        window.renameTheme = async function() {
+            const old = $('#adminThemeSelect').val(); if(!old) return alert("테마를 선택하세요.");
+            const newN = prompt("새 이름:", old); if(!newN || newN===old) return;
+            themeList = themeList.map(t => t === old ? newN : t); themeList.sort();
+            try { await setDoc(doc(db, "meta", "themes"), { list: themeList }); alert("변경됨"); loadThemes(); }
+            catch(e) { alert("변경 실패!: " + e.message); }
+        }
+        window.deleteTheme = async function() {
+            const t = $('#adminThemeSelect').val(); if(!t) return alert("테마를 선택하세요.");
+            if(!confirm("삭제합니까?")) return;
+            try { await updateDoc(doc(db, "meta", "themes"), { list: arrayRemove(t) }); alert("삭제됨"); loadThemes(); toggleThemeMode(); }
+            catch(e) { alert("삭제 실패!: " + e.message); }
+        }
+
+        // 일괄 등록
         window.processBulkData = async function() {
-            const rawInput = $('#bulkDataInput').val();
-            if (!rawInput) return alert("데이터를 입력해주세요.");
-            
-            const targetTheme = $('#bulkThemeName').val().trim();
-            const targetCat = $('#bulkCategory').val().trim(); 
-            const targetPurpose = $('#bulkPurpose').val().trim();
-
-            if(!targetTheme || !targetCat) return alert("테마 이름과 카테고리를 입력해주세요!");
-
-            let dataList;
-            try { dataList = JSON.parse(rawInput); } catch (e) { return alert("JSON 형식이 아닙니다. 따옴표나 쉼표를 확인하세요."); }
-
-            const statusDiv = document.getElementById('bulkStatus');
-            statusDiv.innerHTML = "🚀 등록 시작...";
-            
+            const raw = $('#bulkDataInput').val();
+            const theme = $('#bulkThemeName').val().trim();
+            const cat = $('#bulkCategory').val().trim();
+            const purp = $('#bulkPurpose').val().trim();
+            if(!raw || !theme || !cat) return alert("데이터, 테마명, 카테고리는 필수입니다.");
             const themeRef = doc(db, "meta", "themes");
-            try { await updateDoc(themeRef, { list: arrayUnion(targetTheme) }); } catch(e) {}
-
-            let successCount = 0;
-            for (let i = 0; i < dataList.length; i++) {
-                const item = dataList[i];
-                statusDiv.innerHTML += `<br>⏳ [${i+1}/${dataList.length}] ${item.name}`;
-                statusDiv.scrollTop = statusDiv.scrollHeight;
-
-                try {
-                    let lat = 0, lng = 0;
-                    if (item.address) { const coords = await geocodeAddress(item.address); if (coords) { lat = coords.lat; lng = coords.lng; } }
-
-                    await addDoc(collection(db, "shops"), {
-                        name: item.name, 
-                        address: item.address, 
-                        desc: item.desc || item.name, 
-                        category: [targetCat], 
-                        purpose: [targetPurpose],
-                        region: item.region || "대구", 
-                        menu: item.menu || "이벤트 장소", 
-                        parking: "정보 없음",
-                        isHot: false, totalScore: 5.0, 
-                        themes: [targetTheme], ownerId: "",
-                        lat: lat, lng: lng, 
-                        createdAt: new Date(), updatedAt: new Date()
-                    });
-                    successCount++;
-                } catch (e) { console.error(e); }
-                await new Promise(r => setTimeout(r, 100)); 
+            try { await updateDoc(themeRef, { list: arrayUnion(theme) }); } catch(e) { await setDoc(themeRef, { list: [theme] }); }
+            let list; try { list = JSON.parse(raw); } catch(e) { return alert("JSON 형식이 아닙니다."); }
+            const status = document.getElementById('bulkStatus'); status.innerHTML = "🚀 시작...";
+            let count = 0;
+            for(let item of list) {
+                status.innerHTML += `<br>.. ${item.name} 처리중`;
+                let lat=0, lng=0;
+                if(item.address) {
+                    await new Promise(r => naver.maps.Service.geocode({query: item.address}, (s, res) => {
+                        if(res.v2.addresses[0]) { lat = parseFloat(res.v2.addresses[0].y); lng = parseFloat(res.v2.addresses[0].x); }
+                        r();
+                    }));
+                }
+                await addDoc(collection(db, "shops"), {
+                    name: item.name, address: item.address, desc: item.desc || "",
+                    category: [cat], purpose: [purp], region: item.region || "대구", themes: [theme], 
+                    lat: lat, lng: lng, createdAt: new Date(), updatedAt: new Date(),
+                    parking: "정보 없음", totalScore: 5.0, isHot: false
+                });
+                count++; await new Promise(r => setTimeout(r, 100));
             }
-            alert(`✨ ${targetTheme} 등록 완료!`);
-            location.reload();
+            alert(`${count}건 등록 완료!`); location.reload();
         }
 
         window.deleteAllEventData = async function() {
-            const targetCat = $('#bulkCategory').val().trim();
-            if(!targetCat) return alert("삭제할 카테고리 이름을 입력하세요.");
-
-            if(!confirm(`정말 카테고리가 '${targetCat}'인 모든 데이터를 삭제할까요?\n(되돌릴 수 없습니다!)`)) return;
-            
-            const q = query(collection(db, "shops"), where("category", "array-contains", targetCat));
-            const snapshot = await getDocs(q);
-            if(snapshot.empty) return alert("삭제할 데이터가 없습니다.");
-            
+            const cat = $('#bulkCategory').val().trim();
+            if(!cat) return alert("삭제할 카테고리 입력하세요.");
+            if(!confirm(`'${cat}' 카테고리 데이터를 모두 삭제합니까?`)) return;
+            const q = query(collection(db, "shops"), where("category", "array-contains", cat));
+            const snaps = await getDocs(q);
             const batch = writeBatch(db);
-            snapshot.forEach(doc => batch.delete(doc.ref));
+            snaps.forEach(d => batch.delete(d.ref));
             await batch.commit();
-            alert(`🧹 '${targetCat}' 데이터 삭제 완료!`);
-            location.reload();
+            alert("삭제 완료"); location.reload();
         }
+
+        onSnapshot(collection(db, "shops"), (snap) => {
+            allShopsData = []; snap.forEach(d => allShopsData.push({id: d.id, ...d.data()}));
+            applyAdminFilters();
+        });
+
+        function renderMarkers(shops) {
+            markerList.forEach(m => m.setMap(null)); markerList = [];
+            const groups = {};
+            shops.forEach(s => {
+                if(!s.lat) return; const k = s.lat+","+s.lng;
+                s.isTagged = false;
+                if(currentThemeMode && s.themes && Array.isArray(s.themes) && s.themes.includes(currentThemeMode)) { s.isTagged = true; }
+                if(!groups[k]) groups[k]=[]; groups[k].push(s);
+            });
+            for(let k in groups) {
+                let m = createMarker(map, groups[k], handleMarkerClick);
+                if(m) markerList.push(m);
+            }
+        }
+
+        function handleMarkerClick(list) {
+            const shop = list[0];
+            if(currentThemeMode) {
+                const ref = doc(db, "shops", shop.id);
+                const isAdded = shop.isTagged;
+                if(isAdded) updateDoc(ref, { themes: arrayRemove(currentThemeMode) }).then(()=>showToast("➖ 제거됨"));
+                else updateDoc(ref, { themes: arrayUnion(currentThemeMode) }).then(()=>showToast("➕ 추가됨"));
+            } else { window.openEditModal(shop); }
+        }
+
+        window.showSelectModal = function(list, isThemeMode) { 
+            const container = document.getElementById('selectList'); container.innerHTML = ''; 
+            list.forEach(shop => { 
+                const div = document.createElement('div'); div.className = 'shop-select-item'; 
+                div.innerHTML = `<div class="shop-select-info"><span class="shop-select-name">${shop.name}</span></div>`; 
+                div.onclick = () => { closeSelectModal(); if(isThemeMode) toggleShopTheme(shop); else openEditModal(shop); }; 
+                container.appendChild(div); 
+            }); 
+            $('#selectModal').addClass('show'); 
+        }
+
+        window.applyAdminFilters = function() { renderMarkers(allShopsData); }
+        function showToast(msg) { const t=document.getElementById('toast'); t.innerText=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+        
+        // 지도 빈곳 클릭 시 추가 모달 (테마모드 아닐 때만)
+        naver.maps.Event.addListener(map, 'click', function(e) { 
+            if(currentThemeMode) return; 
+            window.openAddModal();
+            $('#shopLat').val(e.coord.lat()); $('#shopLng').val(e.coord.lng()); 
+        });
+
     </script>
 </body>
 </html>
