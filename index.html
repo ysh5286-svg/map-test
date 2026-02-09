@@ -671,6 +671,7 @@
     // ==========================================
     // 🚀 [추가됨] 프로필 팝업 관련 함수들
     // ==========================================
+    // 🚀 [수정됨] 프로필 팝업 관련 함수 (경험치 바 로직 수정)
     window.openProfileModal = async function() {
         const user = auth.currentUser;
         if(!user) return;
@@ -687,7 +688,6 @@
             // 1. 이름 & 레벨 표시
             document.getElementById('pName').innerText = user.displayName;
             
-            // 레벨별 칭호 (아까 설정한 거랑 맞춤)
             let title = "배고픈 영혼";
             if(lv >= 4) title = "맛의 지배자";
             else if(lv >= 3) title = "대구의 아들";
@@ -695,12 +695,30 @@
             
             document.getElementById('pLevelBadge').innerText = `LV.${lv} ${title}`;
             
-            // 2. 경험치 바 채우기 (10점 만점 기준 나머지 계산)
-            // (예: 25점이면 -> 레벨3, 현재 5점/10점)
-            const currentExp = exp % 10; 
-            const percent = (currentExp / 10) * 100;
+            // 2. [핵심 수정] 레벨별 경험치 바 계산
+            let nextGoal = 0;
+            let prevGoal = 0; // 이전 레벨 경험치 (바닥점)
+
+            if (lv === 1) { nextGoal = 50; prevGoal = 0; }        // 1->2 가려면 50 필요
+            else if (lv === 2) { nextGoal = 100; prevGoal = 50; } // 2->3 가려면 100 필요
+            else if (lv === 3) { nextGoal = 300; prevGoal = 100; } // 3->4 가려면 300 필요
+            else { nextGoal = 300; prevGoal = 300; }             // 만렙
+
+            let percent = 0;
+            let text = "";
+
+            if (lv < 4) {
+                // 현재 레벨에서의 진행률 계산
+                const currentLevelExp = exp - prevGoal; // 이 레벨에서 쌓은 경험치
+                const levelRange = nextGoal - prevGoal; // 이 레벨의 총 구간
+                percent = (currentLevelExp / levelRange) * 100;
+                text = `${exp} / ${nextGoal}`; // (현재 총 경험치 / 다음 목표)
+            } else {
+                percent = 100;
+                text = "MAX LEVEL";
+            }
             
-            document.getElementById('pExpText').innerText = `${currentExp} / 10`;
+            document.getElementById('pExpText').innerText = text;
             document.getElementById('pExpBar').style.width = `${percent}%`;
             
             // 3. UID 세팅
@@ -736,7 +754,13 @@
         } else { alert(`어서오세요, ${user.displayName}님!`); }
     }
 
-    function calculateLevel(exp) { return 1 + Math.floor(exp / 10); }
+    // 5. [수정됨] 레벨 계산기 (기획에 맞게 단계별 설정)
+    function calculateLevel(exp) {
+        if (exp < 50) return 1;       // 0 ~ 40점 (0~4회 방문)
+        if (exp < 100) return 2;      // 50 ~ 90점 (5~9회 방문)
+        if (exp < 300) return 3;      // 100 ~ 290점 (10~29회 방문)
+        return 4;                     // 300점 이상 (30회 이상 - 만렙)
+    }
 
     function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
         var R = 6371; var dLat = deg2rad(lat2-lat1); var dLon = deg2rad(lon2-lon1); 
