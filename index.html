@@ -32,7 +32,7 @@
             <div class="theme-select-wrapper">
                 <select id="mainThemeSelect" class="theme-select" onchange="applyAllFilters()">
                     <option value="ALL">💎 전체 맛집 보기</option>
-                    </select>
+                </select>
             </div>
             <div class="search-filters">
                 <select id="filterRegion" class="search-select" onchange="applyAllFilters()">
@@ -51,9 +51,7 @@
             </div>
         </div>
     </div>
-    </div>
 
-    </div> 
     <div id="userStatusCard" style="position: absolute; top: 150px; right: 10px; z-index: 90; display:flex; justify-content: flex-end; width: auto;">
         <button id="btnLogin" onclick="googleLogin()" style="background:white; border:1px solid #ddd; padding:8px 12px; border-radius:20px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.1); cursor:pointer; display:flex; align-items:center; gap:5px; color:#444;">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18"> 
@@ -66,7 +64,6 @@
             <button onclick="googleLogout()" style="border:none; background:#f1f3f5; color:#555; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:5px; font-weight:bold;">로그아웃</button>
         </div>
     </div>
-    <div id="faqPanel" class="faq-panel">
 
     <div id="faqPanel" class="faq-panel">
         <div class="faq-header"><h3>자주 묻는 질문</h3><button class="faq-close" onclick="toggleFaq()">✕</button></div>
@@ -169,7 +166,7 @@
     <div id="infoPanel" class="info-panel">
         <div class="panel-header" id="panelHeader">
             <button class="panel-close" onclick="closePanel()">✕</button>
-            </div>
+        </div>
         <div class="panel-body">
             <div>
                 <h2 class="panel-title" id="panelTitle">가게 이름</h2>
@@ -205,19 +202,19 @@
             </button>
         </div>
         <div class="bottom-right">
-            </div>
+        </div>
     </div>
 
     <div id="map"></div>
 
     <script>
-        // ... (기존 게임 관련 스크립트) ...
         function toggleFaq() { document.getElementById('faqPanel').classList.toggle('show'); }
         function closePanel() { document.getElementById('infoPanel').classList.remove('show'); }
         function closeSelectModal() { document.getElementById('selectModal').classList.remove('show'); }
         function openGameModal() { resetGame(); document.getElementById('gameModal').classList.add('show'); document.getElementById('faqPanel').classList.remove('show'); }
         function closeGameModal() { document.getElementById('gameModal').classList.remove('show'); }
         
+        // 게임 데이터 및 로직
         const foodData = {
             lunch: [{name:"김치찌개",img:"🥘"},{name:"돈까스",img:"🍛"},{name:"제육볶음",img:"🥩"},{name:"순대국밥",img:"🍚"},{name:"햄버거",img:"🍔"},{name:"짜장면",img:"🥢"},{name:"짬뽕",img:"🍜"},{name:"칼국수",img:"🍲"},{name:"김밥/라면",img:"🍙"},{name:"비빔밥",img:"🥗"},{name:"부대찌개",img:"🥘"},{name:"가정식백반",img:"🍱"},{name:"쌀국수",img:"🍜"},{name:"샌드위치",img:"🥪"},{name:"편의점",img:"🏪"},{name:"샐러드",img:"🥗"}],
             dinner: [{name:"삼겹살",img:"🥓"},{name:"치킨",img:"🍗"},{name:"곱창/대창",img:"🔥"},{name:"회/사시미",img:"🐟"},{name:"족발/보쌈",img:"🍖"},{name:"마라탕",img:"🌶️"},{name:"양꼬치",img:"🍡"},{name:"피자",img:"🍕"},{name:"닭발",img:"🔥"},{name:"찜닭",img:"🥘"},{name:"갈비",img:"🥩"},{name:"감자탕",img:"🥘"},{name:"이자카야",img:"🍶"},{name:"파스타",img:"🍝"},{name:"스테이크",img:"🥩"},{name:"오돌뼈",img:"🍖"}],
@@ -239,513 +236,340 @@
         function drawRoulette(){ if(!rCanvas)return; const n=currentFoods.length; if(n===0){ rCtx.clearRect(0,0,rCanvas.width,rCanvas.height); return; } const arc=(2*Math.PI)/n,dpr=window.devicePixelRatio||1,rect=rCanvas.getBoundingClientRect(); rCanvas.width=rect.width*dpr; rCanvas.height=rect.height*dpr; rCtx.scale(dpr,dpr); const r=rect.width/2; rCtx.clearRect(0,0,rect.width,rect.height); for(let i=0;i<n;i++){ const a=i*arc-Math.PI/2; rCtx.beginPath(); rCtx.moveTo(r,r); rCtx.arc(r,r,r,a,a+arc); rCtx.fillStyle=colors[i%colors.length]; rCtx.fill(); rCtx.stroke(); rCtx.save(); rCtx.translate(r,r); rCtx.rotate(a+arc/2); rCtx.textAlign="right"; rCtx.fillStyle="#333"; const fs=Math.max(12,Math.min(24,200/n)); rCtx.font=`bold ${fs}px 'Noto Sans KR'`; rCtx.fillText(currentFoods[i],r-20,5); rCtx.restore(); } }
         window.spinRoulette=function(){ if(isSpinning)return; if(currentFoods.length<2){ alert("메뉴 2개 이상 필요!"); return; } isSpinning=true; document.getElementById('spinBtn').innerText="...DoRoRo..."; const r=Math.floor(Math.random()*360); rCurrentRotation+=(360*5+r); rCanvas.style.transition="transform 4s cubic-bezier(0.25,0.1,0.25,1)"; rCanvas.style.transform=`rotate(${rCurrentRotation}deg)`; setTimeout(()=>{ isSpinning=false; document.getElementById('spinBtn').innerText="돌려 돌려! START"; fireConfetti(); },4000); }
         function fireConfetti(){ const c=['#f00','#0f0','#00f','#ff0','#0ff']; for(let i=0;i<50;i++){ const d=document.createElement('div'); d.className='confetti'; d.style.left=Math.random()*100+'vw'; d.style.top='-10px'; d.style.backgroundColor=c[Math.floor(Math.random()*c.length)]; d.style.animationDuration=(Math.random()*2+2)+'s'; document.body.appendChild(d); setTimeout(()=>d.remove(),4000); } }
-    
 
-// ==========================================
-        // 📌 [누락된 함수 추가] 마커 클릭 시 정보창 띄우기
-        // ==========================================
-        
-        // 1. 상세 정보 패널 열기 (업데이트됨)
+        // 상세 정보 패널 표시
         window.showPanel = function(shop) {
-            // 기본 텍스트
             document.getElementById('panelTitle').innerText = shop.name;
-            document.getElementById('panelTitle').innerText = shop.name;
-    
-    // 🔥 [수정] 평점 옆에 '/5.0'을 작은 글씨로 추가
-    // innerText 대신 innerHTML을 써야 <span> 태그가 먹힙니다.
-    const score = shop.totalScore || "0.0";
-    document.getElementById('panelTotal').innerHTML = `${score}<span class="total-max"> / 5.0</span>`;
-
-    document.getElementById('panelMenu').innerText = shop.menu || "-";
+            const score = shop.totalScore || "0.0";
+            document.getElementById('panelTotal').innerHTML = `${score}<span class="total-max"> / 5.0</span>`;
             document.getElementById('panelMenu').innerText = shop.menu || "-";
             document.getElementById('panelAddr').innerText = shop.address || "-";
-            
-            // 🔥 [수정] 한줄평 (desc 필드 사용)
-            // 데이터가 없으면 기본 멘트 출력
             const reviewHtml = shop.desc ? `🗨️ "${shop.desc}"` : `🗨️ "아직 등록된 한줄평이 없어요."`;
             document.getElementById('panelReview').innerHTML = reviewHtml;
-            
-            // 메타 태그
             const metaBox = document.getElementById('panelMeta');
             let metaHtml = '';
             if(shop.category) (Array.isArray(shop.category) ? shop.category : [shop.category]).forEach(c => metaHtml += `<span class="panel-tag">#${c}</span>`);
             if(shop.purpose) (Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose]).forEach(p => metaHtml += `<span class="panel-tag">#${p}</span>`);
             metaBox.innerHTML = metaHtml;
-
-            // 🔥 [추가] 이미지 & 주차 뱃지 처리
             const header = document.getElementById('panelHeader');
-            
-            // 배경 이미지
-            if (shop.imageUrl) {
-                header.style.backgroundImage = `url('${shop.imageUrl}')`;
-            } else {
-                header.style.backgroundImage = 'none';
-                header.style.backgroundColor = '#ddd';
-            }
-
-            // 주차 뱃지 생성 (HTML 주입)
-            // 기존 닫기 버튼은 유지해야 하므로 innerHTML로 같이 넣어줍니다.
+            if (shop.imageUrl) { header.style.backgroundImage = `url('${shop.imageUrl}')`; } 
+            else { header.style.backgroundImage = 'none'; header.style.backgroundColor = '#ddd'; }
             let parkingBadge = '';
-            if (shop.parking) {
-                // 주차 상태에 따라 텍스트/아이콘이 데이터에 이미 포함되어 있다고 가정 (예: "🅿️ 주차장 완비")
-                parkingBadge = `<div class="parking-badge">${shop.parking}</div>`;
-            }
+            if (shop.parking) { parkingBadge = `<div class="parking-badge">${shop.parking}</div>`; }
             header.innerHTML = `<button class="panel-close" onclick="closePanel()">✕</button>${parkingBadge}`;
-
-            // 네이버 링크
             const btnLink = document.getElementById('panelLink');
-            if (shop.link) {
-                btnLink.href = shop.link;
-                btnLink.style.display = 'block';
-                btnLink.innerText = '네이버 플레이스 보기';
-            } else {
-                btnLink.href = '#';
-                btnLink.style.display = 'none';
-            }
-
-            // 패널 열기
+            if (shop.link) { btnLink.href = shop.link; btnLink.style.display = 'block'; btnLink.innerText = '네이버 플레이스 보기'; } 
+            else { btnLink.href = '#'; btnLink.style.display = 'none'; }
             document.getElementById('faqPanel').classList.remove('show');
             document.getElementById('selectModal').classList.remove('show');
             document.getElementById('infoPanel').classList.add('show');
         }
-        </script>
+    </script>
 
     <script type="module">
-    import { db, initMap, createMarker, auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged } from "./common.js";
-    import { collection, getDocs, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { db, initMap, createMarker, auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged } from "./common.js";
+        import { collection, getDocs, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // 1. 지도 및 기본 변수 초기화
-    var map = initMap();
-    let allShops = [];
-    let markerList = [];
+        var map = initMap();
+        let allShops = [];
+        let markerList = [];
+        const CACHE_KEY = "dazzle_shops_data_v1"; 
 
-    // 캐시 설정
-    const CACHE_KEY = "dazzle_shops_data_v1"; 
+        // 윈도우 리사이즈
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => { map.refresh(); updateVisibleMarkers(); }, 100);
+        });
 
-    // 2. 윈도우 리사이즈 이벤트 (디바운싱)
-    let resizeTimer;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => { map.refresh(); updateVisibleMarkers(); }, 100);
-    });
+        const LANDMARKS = {
+            "팔공산": { lat: 35.9899, lng: 128.6961 }, "갓바위": { lat: 35.9758, lng: 128.7694 },
+            "반월당": { lat: 35.8644, lng: 128.5933 }, "동성로": { lat: 35.8710, lng: 128.5960 },
+            "수성못": { lat: 35.8280, lng: 128.6170 }, "이월드": { lat: 35.8530, lng: 128.5630 },
+            "83타워": { lat: 35.8530, lng: 128.5630 }, "두류공원": { lat: 35.8475, lng: 128.5583 },
+            "동대구역": { lat: 35.8770, lng: 128.6285 }, "대구역": { lat: 35.8764, lng: 128.5960 },
+            "서문시장": { lat: 35.8690, lng: 128.5815 }, "김광석거리": { lat: 35.8603, lng: 128.6080 },
+            "앞산": { lat: 35.8335, lng: 128.5810 }, "강정보": { lat: 35.8430, lng: 128.4690 },
+            "디아크": { lat: 35.8430, lng: 128.4690 }, "삼성라이온즈파크": { lat: 35.8411, lng: 128.6817 },
+            "라팍": { lat: 35.8411, lng: 128.6817 }, "대구공항": { lat: 35.8970, lng: 128.6440 },
+            "경북대": { lat: 35.8906, lng: 128.6121 }, "계명대": { lat: 35.8535, lng: 128.4860 },
+            "영남대": { lat: 35.8306, lng: 128.7562 }
+        };
 
-    // 3. 랜드마크 정의
-    const LANDMARKS = {
-        "팔공산": { lat: 35.9899, lng: 128.6961 }, "갓바위": { lat: 35.9758, lng: 128.7694 },
-        "반월당": { lat: 35.8644, lng: 128.5933 }, "동성로": { lat: 35.8710, lng: 128.5960 },
-        "수성못": { lat: 35.8280, lng: 128.6170 }, "이월드": { lat: 35.8530, lng: 128.5630 },
-        "83타워": { lat: 35.8530, lng: 128.5630 }, "두류공원": { lat: 35.8475, lng: 128.5583 },
-        "동대구역": { lat: 35.8770, lng: 128.6285 }, "대구역": { lat: 35.8764, lng: 128.5960 },
-        "서문시장": { lat: 35.8690, lng: 128.5815 }, "김광석거리": { lat: 35.8603, lng: 128.6080 },
-        "앞산": { lat: 35.8335, lng: 128.5810 }, "강정보": { lat: 35.8430, lng: 128.4690 },
-        "디아크": { lat: 35.8430, lng: 128.4690 }, "삼성라이온즈파크": { lat: 35.8411, lng: 128.6817 },
-        "라팍": { lat: 35.8411, lng: 128.6817 }, "대구공항": { lat: 35.8970, lng: 128.6440 },
-        "경북대": { lat: 35.8906, lng: 128.6121 }, "계명대": { lat: 35.8535, lng: 128.4860 },
-        "영남대": { lat: 35.8306, lng: 128.7562 }
-    };
+        naver.maps.Event.addListener(map, "click", function() {
+            closePanel(); document.getElementById('faqPanel').classList.remove('show');
+        });
 
-    // 4. 지도 클릭 시 패널 닫기
-    naver.maps.Event.addListener(map, "click", function() {
-        closePanel(); document.getElementById('faqPanel').classList.remove('show');
-    });
-
-    // ==========================================
-    // 🚀 1. 데이터 가져오기 (캐시 + DB)
-    // ==========================================
-    async function loadShopsData() {
-        const cachedData = localStorage.getItem(CACHE_KEY);
-        const cachedTime = localStorage.getItem(CACHE_KEY + "_time");
-        const now = new Date().getTime();
-        let isCacheUsed = false;
-
-        // 캐시 확인
-        if (cachedData && cachedTime) {
-            try {
-                const parsed = JSON.parse(cachedData);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    allShops = parsed;
-                    checkAndRender("캐시로드"); // 그리기 시도
-                    document.getElementById('loadingOverlay').classList.add('fade-out');
-                    isCacheUsed = true;
-                }
-            } catch (err) { console.warn("캐시 파싱 오류"); }
-        }
-
-        // DB 최신 데이터 확인
-        if(db) {
-            try {
-                const snapshot = await getDocs(collection(db, "shops"));
-                const newShops = [];
-                snapshot.forEach((doc) => newShops.push({ id: doc.id, ...doc.data() }));
-                
-                if (newShops.length > 0 && JSON.stringify(newShops) !== cachedData) {
-                    allShops = newShops;
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(allShops));
-                    localStorage.setItem(CACHE_KEY + "_time", now);
-                    
-                    checkAndRender("DB업데이트"); // 데이터 왔으니 다시 그리기 시도
+        // 데이터 로드
+        async function loadShopsData() {
+            const cachedData = localStorage.getItem(CACHE_KEY);
+            const cachedTime = localStorage.getItem(CACHE_KEY + "_time");
+            const now = new Date().getTime();
+            let isCacheUsed = false;
+            if (cachedData && cachedTime) {
+                try {
+                    const parsed = JSON.parse(cachedData);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        allShops = parsed;
+                        checkAndRender("캐시로드");
+                        document.getElementById('loadingOverlay').classList.add('fade-out');
+                        isCacheUsed = true;
+                    }
+                } catch (err) { console.warn("캐시 파싱 오류"); }
+            }
+            if(db) {
+                try {
+                    const snapshot = await getDocs(collection(db, "shops"));
+                    const newShops = [];
+                    snapshot.forEach((doc) => newShops.push({ id: doc.id, ...doc.data() }));
+                    if (newShops.length > 0 && JSON.stringify(newShops) !== cachedData) {
+                        allShops = newShops;
+                        localStorage.setItem(CACHE_KEY, JSON.stringify(allShops));
+                        localStorage.setItem(CACHE_KEY + "_time", now);
+                        checkAndRender("DB업데이트");
+                        if(!isCacheUsed) document.getElementById('loadingOverlay').classList.add('fade-out');
+                    }
+                } catch (e) {
+                    console.error("DB 로딩 실패:", e);
                     if(!isCacheUsed) document.getElementById('loadingOverlay').classList.add('fade-out');
                 }
-            } catch (e) {
-                console.error("DB 로딩 실패:", e);
-                if(!isCacheUsed) document.getElementById('loadingOverlay').classList.add('fade-out');
             }
         }
-    }
 
-    // ==========================================
-    // 🚀 2. 테마 로딩 (원하시는 대로 첫번째 테마 선택)
-    // ==========================================
-    async function initTheme() {
-        const select = document.getElementById('mainThemeSelect');
-        try {
-            const docRef = doc(db, "meta", "themes");
-            const docSnap = await getDoc(docRef);
-            
-            select.innerHTML = ''; // 초기화
+        async function initTheme() {
+            const select = document.getElementById('mainThemeSelect');
+            try {
+                const docRef = doc(db, "meta", "themes");
+                const docSnap = await getDoc(docRef);
+                select.innerHTML = ''; 
+                if (docSnap.exists()) {
+                    let list = docSnap.data().list || [];
+                    list.sort();
+                    list.forEach((t) => {
+                        const opt = document.createElement('option'); opt.value = t; opt.innerText = `🚩 ${t}`; select.appendChild(opt);
+                    });
+                    if (list.length > 0) select.value = list[0];
+                }
+                const allOpt = document.createElement('option'); allOpt.value = "ALL"; allOpt.innerText = "📂 전체 맛집 보기"; select.appendChild(allOpt); 
+                if (select.options.length === 1) select.value = "ALL";
+            } catch(e) {
+                console.log("테마 로딩 실패:", e);
+                if(select.options.length === 0) {
+                    const allOpt = document.createElement('option'); allOpt.value = "ALL"; allOpt.innerText = "📂 전체 맛집 보기"; select.appendChild(allOpt); select.value = "ALL";
+                }
+            } finally {
+                checkAndRender("테마로딩완료");
+            }
+        }
 
-            if (docSnap.exists()) {
-                let list = docSnap.data().list || [];
-                list.sort();
-                list.forEach((t) => {
-                    const opt = document.createElement('option');
-                    opt.value = t;
-                    opt.innerText = `🚩 ${t}`;
-                    select.appendChild(opt);
+        function checkAndRender(source) {
+            if (!allShops || allShops.length === 0) return;
+            const bounds = map.getBounds();
+            if (!bounds || !(bounds instanceof naver.maps.LatLngBounds)) {
+                setTimeout(() => checkAndRender(source), 200); return;
+            }
+            updateVisibleMarkers();
+        }
+
+        function updateVisibleMarkers() {
+            if (!map) return;
+            const bounds = map.getBounds();
+            if (!bounds) return; 
+            const filtered = filterShops(allShops);
+            const visibleShops = filtered.filter(shop => {
+                if(!shop.lat || !shop.lng) return false;
+                const pos = new naver.maps.LatLng(shop.lat, shop.lng);
+                return bounds.hasLatLng(pos);
+            });
+            renderMarkers(visibleShops);
+        }
+
+        function renderMarkers(shops) {
+            markerList.forEach(m => m.setMap(null));
+            markerList = [];
+            const groups = {};
+            shops.forEach(shop => {
+                const key = parseFloat(shop.lat).toFixed(5) + "," + parseFloat(shop.lng).toFixed(5);
+                if(!groups[key]) groups[key] = [];
+                groups[key].push(shop);
+            });
+            for(const key in groups) {
+                groups[key].sort((a, b) => {
+                    const dateA = a.updatedAt ? (a.updatedAt.seconds || 0) : 0;
+                    const dateB = b.updatedAt ? (b.updatedAt.seconds || 0) : 0;
+                    return dateB - dateA;
                 });
-                
-                // 🔥 [요청사항 반영] 리스트가 있으면 첫 번째 테마 자동 선택
-                if (list.length > 0) select.value = list[0];
+                const marker = createMarker(map, groups[key], function(clickedList) {
+                    if (clickedList.length === 1) showPanel(clickedList[0]);
+                    else showSelectModal(clickedList);
+                });
+                if(marker) markerList.push(marker);
             }
-            
-            // '전체 맛집 보기'는 항상 맨 뒤에 추가
-            const allOpt = document.createElement('option');
-            allOpt.value = "ALL";
-            allOpt.innerText = "📂 전체 맛집 보기";
-            select.appendChild(allOpt); 
-            
-            // 만약 테마가 하나도 없으면 전체보기가 기본값
-            if (select.options.length === 1) select.value = "ALL";
-
-        } catch(e) {
-            console.log("테마 로딩 실패:", e);
-            if(select.options.length === 0) {
-                const allOpt = document.createElement('option');
-                allOpt.value = "ALL"; allOpt.innerText = "📂 전체 맛집 보기";
-                select.appendChild(allOpt);
-                select.value = "ALL";
-            }
-        } finally {
-            checkAndRender("테마로딩완료"); // 테마 세팅 끝났으니 그리기 시도
-        }
-    }
-
-    // ==========================================
-    // 🚀 3. [핵심] 안전하게 핀 그리기 (무한 재시도)
-    // ==========================================
-    
-    // 이 함수는 "지도", "데이터", "테마" 3박자가 맞을 때까지 끈질기게 기다립니다.
-    function checkAndRender(source) {
-        // 1. 데이터가 없으면 아직 그릴 수 없음
-        if (!allShops || allShops.length === 0) return;
-
-        // 2. 지도가 화면 영역(Bounds)을 잡았는지 확인
-        const bounds = map.getBounds();
-        
-        // 🚨 지도가 아직 로딩 중이라면? (Bounds가 없거나 0일 때)
-        if (!bounds || !(bounds instanceof naver.maps.LatLngBounds)) {
-            console.log(`⏳ [${source}] 지도 준비 대기중... (재시도 예약)`);
-            // 0.2초 뒤에 나 자신을 다시 호출 (재귀)
-            setTimeout(() => checkAndRender(source), 200); 
-            return;
         }
 
-        // 3. 모든 준비 완료! 그리기 실행
-        console.log(`✅ [${source}] 지도 준비됨! 핀 그리기 시작`);
-        updateVisibleMarkers();
-    }
-
-    function updateVisibleMarkers() {
-        if (!map) return;
-        const bounds = map.getBounds();
-        if (!bounds) return; // 위에서 체크했지만 한번 더 안전장치
-
-        const filtered = filterShops(allShops);
-        const visibleShops = filtered.filter(shop => {
-            if(!shop.lat || !shop.lng) return false;
-            const pos = new naver.maps.LatLng(shop.lat, shop.lng);
-            return bounds.hasLatLng(pos);
-        });
-        renderMarkers(visibleShops);
-    }
-
-    // 마커 렌더링
-    function renderMarkers(shops) {
-        markerList.forEach(m => m.setMap(null));
-        markerList = [];
-        
-        const groups = {};
-        shops.forEach(shop => {
-            const key = parseFloat(shop.lat).toFixed(5) + "," + parseFloat(shop.lng).toFixed(5);
-            if(!groups[key]) groups[key] = [];
-            groups[key].push(shop);
-        });
-
-        for(const key in groups) {
-            groups[key].sort((a, b) => {
-                const dateA = a.updatedAt ? (a.updatedAt.seconds || 0) : 0;
-                const dateB = b.updatedAt ? (b.updatedAt.seconds || 0) : 0;
-                return dateB - dateA;
+        function filterShops(shops) {
+            var theme = $('#mainThemeSelect').val();
+            var region = $('#filterRegion').val();
+            var category = $('#filterCategory').val();
+            var purpose = $('#filterPurpose').val();
+            var keywordInput = $('#keyword').val() || "";
+            var keywords = keywordInput.toLowerCase().trim().split(/\s+/).filter(t => t.length > 0);
+            return shops.filter(shop => {
+                var matchTheme = true;
+                if (theme && theme !== 'ALL') { if (!shop.themes || !shop.themes.includes(theme)) matchTheme = false; }
+                var matchRegion = (region === "") || (shop.region === region);
+                var shopCategories = Array.isArray(shop.category) ? shop.category : [shop.category];
+                var matchCategory = (category === "") || shopCategories.includes(category);
+                var shopPurposes = Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose];
+                var matchPurpose = (purpose === "") || shopPurposes.includes(purpose);
+                var searchableText = (shop.name + " " + (shop.menu || "") + " " + (shop.area || "") + " " + (shop.address || "") + " " + shopCategories.join(" ")).toLowerCase();
+                var matchKeyword = true;
+                if (keywords.length > 0) { matchKeyword = keywords.every(term => searchableText.includes(term)); }
+                return matchTheme && matchRegion && matchCategory && matchPurpose && matchKeyword;
             });
-            const marker = createMarker(map, groups[key], function(clickedList) {
-                if (clickedList.length === 1) showPanel(clickedList[0]);
-                else showSelectModal(clickedList);
-            });
-            if(marker) markerList.push(marker);
         }
-    }
 
-    // 필터 로직
-    function filterShops(shops) {
-        var theme = $('#mainThemeSelect').val();
-        var region = $('#filterRegion').val();
-        var category = $('#filterCategory').val();
-        var purpose = $('#filterPurpose').val();
-        var keywordInput = $('#keyword').val() || "";
-        var keywords = keywordInput.toLowerCase().trim().split(/\s+/).filter(t => t.length > 0);
-
-        return shops.filter(shop => {
-            // 테마 필터 (선택된 값이 있고 ALL이 아니면 필터링)
-            var matchTheme = true;
-            if (theme && theme !== 'ALL') {
-                if (!shop.themes || !shop.themes.includes(theme)) matchTheme = false;
-            }
-
-            var matchRegion = (region === "") || (shop.region === region);
-            var shopCategories = Array.isArray(shop.category) ? shop.category : [shop.category];
-            var matchCategory = (category === "") || shopCategories.includes(category);
-            var shopPurposes = Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose];
-            var matchPurpose = (purpose === "") || shopPurposes.includes(purpose);
-            
-            var searchableText = (shop.name + " " + (shop.menu || "") + " " + (shop.area || "") + " " + (shop.address || "") + " " + shopCategories.join(" ")).toLowerCase();
-            var matchKeyword = true;
-            if (keywords.length > 0) {
-                matchKeyword = keywords.every(term => searchableText.includes(term));
-            }
-            return matchTheme && matchRegion && matchCategory && matchPurpose && matchKeyword;
-        });
-    }
-
-    // ==========================================
-    // 4. 실행 및 이벤트 등록
-    // ==========================================
-    
-    // 키워드 검색
-    $('#keyword').on('keydown', function(e) {
-        if (e.key === 'Enter') {
-            const rawVal = $(this).val().trim();
-            const query = rawVal.replace(/\s+/g, '').toLowerCase();
-            if(!query) return;
-
-            // 1. 랜드마크
-            for (const key in LANDMARKS) {
-                if (query.includes(key)) {
-                    const coords = LANDMARKS[key];
-                    map.setCenter(new naver.maps.LatLng(coords.lat, coords.lng));
-                    map.setZoom(15);
+        $('#keyword').on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const rawVal = $(this).val().trim();
+                const query = rawVal.replace(/\s+/g, '').toLowerCase();
+                if(!query) return;
+                for (const key in LANDMARKS) {
+                    if (query.includes(key)) {
+                        const coords = LANDMARKS[key];
+                        map.setCenter(new naver.maps.LatLng(coords.lat, coords.lng));
+                        map.setZoom(15);
+                        $(this).blur(); return;
+                    }
+                }
+                const targetShop = allShops.find(shop => {
+                    if(!shop.name) return false;
+                    return shop.name.replace(/\s+/g, '').toLowerCase().includes(query);
+                });
+                if (targetShop && targetShop.lat && targetShop.lng) {
+                    map.morph(new naver.maps.LatLng(targetShop.lat, targetShop.lng), 17);
                     $(this).blur(); return;
                 }
+                searchAddressToCoordinate(rawVal);
+                $(this).blur();
             }
+        });
 
-            // 2. 가게 이름
-            const targetShop = allShops.find(shop => {
-                if(!shop.name) return false;
-                return shop.name.replace(/\s+/g, '').toLowerCase().includes(query);
-            });
-            if (targetShop && targetShop.lat && targetShop.lng) {
-                map.morph(new naver.maps.LatLng(targetShop.lat, targetShop.lng), 17);
-                $(this).blur(); return;
-            }
-
-            // 3. 주소
-            searchAddressToCoordinate(rawVal);
-            $(this).blur();
-        }
-    });
-
-    function searchAddressToCoordinate(query, isRetry = false) {
-        naver.maps.Service.geocode({ query: query }, function(status, response) {
-            if (status === naver.maps.Service.Status.OK) {
-                if (response.v2 && response.v2.addresses.length > 0) {
-                    const item = response.v2.addresses[0];
-                    map.setCenter(new naver.maps.Point(item.x, item.y));
-                    map.setZoom(16);
-                } else if (response.result && response.result.items.length > 0) {
-                    const item = response.result.items[0];
-                    map.setCenter(new naver.maps.Point(item.point.x, item.point.y));
-                    map.setZoom(16);
+        function searchAddressToCoordinate(query, isRetry = false) {
+            naver.maps.Service.geocode({ query: query }, function(status, response) {
+                if (status === naver.maps.Service.Status.OK) {
+                    if (response.v2 && response.v2.addresses.length > 0) {
+                        const item = response.v2.addresses[0]; map.setCenter(new naver.maps.Point(item.x, item.y)); map.setZoom(16);
+                    } else if (response.result && response.result.items.length > 0) {
+                        const item = response.result.items[0]; map.setCenter(new naver.maps.Point(item.point.x, item.point.y)); map.setZoom(16);
+                    } else {
+                        if(!isRetry && query.indexOf('대구') === -1) searchAddressToCoordinate("대구 " + query, true);
+                        else alert("주소를 찾을 수 없습니다.");
+                    }
                 } else {
                     if(!isRetry && query.indexOf('대구') === -1) searchAddressToCoordinate("대구 " + query, true);
-                    else alert("주소를 찾을 수 없습니다.");
+                    else alert("검색 실패");
+                }
+            });
+        }
+
+        let idleTimer;
+        naver.maps.Event.addListener(map, 'idle', function() { clearTimeout(idleTimer); idleTimer = setTimeout(updateVisibleMarkers, 150); });
+        window.applyAllFilters = function() { updateVisibleMarkers(); };
+
+        initTheme(); loadShopsData();
+
+        window.moveToCurrentLocation = function() {
+            map.refresh(); 
+            if (!navigator.geolocation) { alert("위치 정보를 사용할 수 없습니다."); return; }
+            const btnText = document.querySelector('.loc-text');
+            if(btnText) btnText.innerText = "탐색중..";
+            navigator.geolocation.getCurrentPosition((position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const loc = new naver.maps.LatLng(lat, lng);
+                map.setCenter(loc); map.setZoom(16);
+                setTimeout(() => { updateVisibleMarkers(); if(btnText) btnText.innerText = "내 주변"; }, 300);
+                if (window.myLocationMarker) window.myLocationMarker.setMap(null);
+                window.myLocationMarker = new naver.maps.Marker({
+                    position: loc, map: map,
+                    icon: { content: '<div style="width:16px;height:16px;background:#3498db;border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>', anchor: new naver.maps.Point(8, 8) }
+                });
+            }, () => { alert("위치 정보를 가져올 수 없습니다."); if(btnText) btnText.innerText = "내 주변"; });
+        }
+
+        // PWA 등록
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js?v=2.4') 
+                .then(reg => {
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) { window.location.reload(); }
+                            }
+                        };
+                    };
+                })
+                .catch(err => console.log('서비스 워커 실패', err));
+        }
+
+        let deferredPrompt; const installBtn = document.getElementById('installBtn'); const ua = navigator.userAgent.toLowerCase(); const isIos = /iphone|ipad|ipod/.test(ua); const isInApp = ua.includes('kakao') || ua.includes('instagram') || ua.includes('naver');
+        if (isIos) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("📲 아이폰 설치 방법\n\n1. 사파리(Safari) 브라우저 하단 '공유' 버튼 클릭\n2. 메뉴를 내려서 '홈 화면에 추가' 선택\n3. 바탕화면에 '대구핫플여기' 앱 생성!")); } 
+        else if (isInApp) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("🚫 현재 브라우저에서는 다운로드가 제한됩니다.\n\n우측 하단(또는 상단)의 [더보기 ···] 버튼을 누르고\n[다른 브라우저로 열기]를 선택해주세요!")); }
+        else { window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; }); installBtn.addEventListener('click', (e) => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') installBtn.style.display = 'none'; deferredPrompt = null; }); } else alert("이미 설치됨"); }); }
+
+        // ==========================================
+        // 🔥 로그인 & 레벨업 시스템 (auth 연동)
+        // ==========================================
+        window.googleLogin = function() {
+            signInWithPopup(auth, googleProvider)
+                .then((result) => { checkUserDB(result.user); }).catch((error) => { alert("로그인 실패: " + error.message); });
+        };
+
+        window.googleLogout = function() {
+            if(confirm("로그아웃 하시겠습니까?")) {
+                signOut(auth).then(() => { alert("로그아웃 되었습니다."); location.reload(); });
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            const btnLogin = document.getElementById('btnLogin');
+            const myProfile = document.getElementById('myProfile');
+            if (user) {
+                btnLogin.style.display = 'none'; myProfile.style.display = 'flex';
+                document.getElementById('userName').innerText = user.displayName;
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                if(userSnap.exists()) {
+                    const data = userSnap.data();
+                    const lv = calculateLevel(data.exp || 0);
+                    document.getElementById('userLevelBadge').innerText = `LV.${lv}`;
                 }
             } else {
-                if(!isRetry && query.indexOf('대구') === -1) searchAddressToCoordinate("대구 " + query, true);
-                else alert("검색 실패");
+                btnLogin.style.display = 'flex'; myProfile.style.display = 'none';
             }
         });
-    }
 
-    // 지도 멈춤 시 마커 갱신 (디바운싱)
-    let idleTimer;
-    naver.maps.Event.addListener(map, 'idle', function() {
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(updateVisibleMarkers, 150);
-    });
-
-    // 필터 변경 시 호출 (전역)
-    window.applyAllFilters = function() { updateVisibleMarkers(); };
-
-    // 🔥 최종 실행
-    initTheme();      
-    loadShopsData();  
-
-    // 내 위치 이동
-    window.moveToCurrentLocation = function() {
-        map.refresh(); 
-        if (!navigator.geolocation) { alert("위치 정보를 사용할 수 없습니다."); return; }
-        const btnText = document.querySelector('.loc-text');
-        if(btnText) btnText.innerText = "탐색중..";
-        navigator.geolocation.getCurrentPosition((position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const loc = new naver.maps.LatLng(lat, lng);
-            map.setCenter(loc); map.setZoom(16);
-            setTimeout(() => { updateVisibleMarkers(); if(btnText) btnText.innerText = "내 주변"; }, 300);
-            if (window.myLocationMarker) window.myLocationMarker.setMap(null);
-            window.myLocationMarker = new naver.maps.Marker({
-                position: loc, map: map,
-                icon: { content: '<div style="width:16px;height:16px;background:#3498db;border:2px solid white;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>', anchor: new naver.maps.Point(8, 8) }
-            });
-        }, () => { alert("위치 정보를 가져올 수 없습니다."); if(btnText) btnText.innerText = "내 주변"; });
-    }
-
-    
-  // PWA 로직 수정
-    if ('serviceWorker' in navigator) {
-        // 🔥 [수정] new Date().getTime()을 지우고, 직접 버전 숫자를 적어주세요.
-        // 나중에 업데이트할 때만 이 숫자를 v=2.2 -> v=2.3 처럼 바꿔주시면 됩니다.
-        navigator.serviceWorker.register('./sw.js?v=2.4') 
-            .then(reg => {
-                console.log('서비스 워커 등록 완료:', reg);
-                
-                reg.onupdatefound = () => {
-                    const installingWorker = reg.installing;
-                    installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed') {
-                            if (navigator.serviceWorker.controller) {
-                                // 이제 버전이 고정되었으므로, 진짜 업데이트 때만 이 코드가 실행됩니다.
-                                console.log('새로운 업데이트가 있어 새로고침합니다.');
-                                window.location.reload(); 
-                            }
-                        }
-                    };
-                };
-            })
-            .catch(err => console.log('서비스 워커 실패', err));
-        }
-
-    let deferredPrompt; const installBtn = document.getElementById('installBtn'); const ua = navigator.userAgent.toLowerCase(); const isIos = /iphone|ipad|ipod/.test(ua); const isInApp = ua.includes('kakao') || ua.includes('instagram') || ua.includes('naver');
-    if (isIos) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("📲 아이폰 설치 방법\n\n1. 사파리(Safari) 브라우저 하단 '공유' 버튼 클릭\n2. 메뉴를 내려서 '홈 화면에 추가' 선택\n3. 바탕화면에 '대구핫플여기' 앱 생성!")); } 
-    else if (isInApp) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("🚫 현재 브라우저에서는 다운로드가 제한됩니다.\n\n우측 하단(또는 상단)의 [더보기 ···] 버튼을 누르고\n[다른 브라우저로 열기]를 선택해주세요!")); }
-    else { window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; }); installBtn.addEventListener('click', (e) => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') installBtn.style.display = 'none'; deferredPrompt = null; }); } else alert("이미 설치됨"); }); }
-// ==========================================
-    // 🔥 [추가됨] 로그인 & 레벨업 시스템 로직
-    // ==========================================
-    
-    // 1. 로그인 함수 (전역 window에 연결)
-    window.googleLogin = function() {
-        signInWithPopup(auth, googleProvider)
-            .then((result) => {
-                checkUserDB(result.user); // DB 확인 및 생성
-            }).catch((error) => {
-                alert("로그인 실패: " + error.message);
-            });
-    };
-
-    // 2. 로그아웃 함수
-    window.googleLogout = function() {
-        if(confirm("로그아웃 하시겠습니까?")) {
-            signOut(auth).then(() => {
-                alert("로그아웃 되었습니다.");
-                location.reload();
-            });
-        }
-    };
-
-    // 3. 로그인 상태 감지 (켜자마자 실행됨)
-    onAuthStateChanged(auth, async (user) => {
-        const btnLogin = document.getElementById('btnLogin');
-        const myProfile = document.getElementById('myProfile');
-        
-        if (user) {
-            // 로그인 상태
-            btnLogin.style.display = 'none';
-            myProfile.style.display = 'flex';
-            document.getElementById('userName').innerText = user.displayName;
-            
-            // DB에서 레벨 가져오기
+        async function checkUserDB(user) {
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
-            if(userSnap.exists()) {
-                const data = userSnap.data();
-                const lv = calculateLevel(data.exp || 0);
-                document.getElementById('userLevelBadge').innerText = `LV.${lv}`;
-            }
-        } else {
-            // 로그아웃 상태
-            btnLogin.style.display = 'flex';
-            myProfile.style.display = 'none';
+            if (!userSnap.exists()) {
+                await setDoc(userRef, { name: user.displayName, email: user.email, photo: user.photoURL, exp: 0, level: 1, createdAt: new Date() });
+                alert(`반갑습니다, ${user.displayName}님! \n대구 보물지도 레벨 1부터 시작합니다! 🚩`);
+            } else { alert(`어서오세요, ${user.displayName}님!`); }
         }
-    });
 
-    // 4. DB에 사용자 정보 없으면 만들기 (가입 처리)
-    async function checkUserDB(user) {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        
-        if (!userSnap.exists()) {
-            // 신규 가입자: 레벨 1, 경험치 0으로 시작
-            await setDoc(userRef, {
-                name: user.displayName,
-                email: user.email,
-                photo: user.photoURL,
-                exp: 0, // 경험치
-                level: 1,
-                createdAt: new Date()
-            });
-            alert(`반갑습니다, ${user.displayName}님! \n대구 보물지도 레벨 1부터 시작합니다! 🚩`);
-        } else {
-            alert(`어서오세요, ${user.displayName}님!`);
+        function calculateLevel(exp) { return 1 + Math.floor(exp / 10); }
+
+        window.testLevelUp = async function() {
+            const user = auth.currentUser;
+            if(!user) return alert("로그인 먼저 해주세요!");
+            const userRef = doc(db, "users", user.uid);
+            await updateDoc(userRef, { exp: increment(10) });
+            alert("✨ 맛집 방문 인증 완료! 경험치 +10 획득!");
+            location.reload(); 
         }
-    }
-
-    // 5. 레벨 계산기 (경험치 10점마다 1업)
-    function calculateLevel(exp) {
-        return 1 + Math.floor(exp / 10);
-    }
-
-    // 🔥 테스트용: 사장님만 쓸 수 있는 '경험치 올리기' 버튼 기능 (나중에 QR코드로 교체)
-    window.testLevelUp = async function() {
-        const user = auth.currentUser;
-        if(!user) return alert("로그인 먼저 해주세요!");
-        
-        const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, {
-            exp: increment(10) // 경험치 +10
-        });
-        alert("✨ 맛집 방문 인증 완료! 경험치 +10 획득!");
-        location.reload(); // 새로고침해서 레벨 반영
-    }
-</script>
+    </script>
 </body>
 </html>
