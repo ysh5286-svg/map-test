@@ -3,24 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>관리자 모드 (Fix & Hot)</title>
+    <title>관리자 모드 (필터 수정완료)</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=krsv42ftzf&submodules=geocoder"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
+        /* 관리자 페이지 전용 스타일 */
+        .admin-search-input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 13px; width: 120px; outline: none; color: #333; }
+        .admin-select { padding: 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; color: #333; background: white; cursor: pointer; }
+        .search-box-wrapper { gap: 5px; flex-wrap: wrap; }
+
         .bulk-textarea { width: 100%; height: 200px; font-size: 12px; font-family: monospace; padding: 10px; border: 1px solid #ccc; background: #f4f4f4; margin-bottom: 10px; }
         .bulk-status { font-size: 12px; color: #e74c3c; margin-top: 5px; font-weight: bold; max-height: 100px; overflow-y: auto; }
         .shop-select-item { display: flex; justify-content: space-between; align-items: center; }
         .shop-select-info { flex: 1; cursor: pointer; }
-        .admin-search-input { padding: 6px 10px; border: 1px solid #c0392b; border-radius: 5px; font-size: 13px; width: 150px; outline: none; color: #333; }
         .dup-msg { font-size: 12px; margin-left: 10px; font-weight: bold; }
-        .dup-error { color: #e74c3c; }
-        .dup-ok { color: #2ecc71; }
         .check-item { display: inline-flex; align-items: center; margin-right: 10px; margin-bottom: 5px; cursor: pointer; font-size: 13px; }
         .check-item input { margin-right: 5px; cursor: pointer; }
         
-        /* 🔥 핫플 강조 체크박스 스타일 */
         .hot-check-wrapper {
             background: #ffe3e3; border: 2px solid #ff6b6b; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;
         }
@@ -30,15 +31,27 @@
 </head>
 <body>
     <div class="search-container">
-        <div class="search-box-wrapper" style="background:#c0392b; color:white; flex-direction:row; justify-content:space-between; align-items:center;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <strong>🔒 관리자</strong>
-                <input type="text" id="adminSearch" class="admin-search-input" placeholder="🔍 업체명 검색">
+        <div class="search-box-wrapper" style="background:#c0392b; color:white; flex-direction:row; align-items:center; padding: 10px;">
+            <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap; flex:1;">
+                <strong style="white-space:nowrap;">🔒 관리</strong>
+                
+                <select id="adminRegion" class="admin-select" onchange="applyAdminFilters()">
+                    <option value="">📍 지역 전체</option><option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option>
+                </select>
+                <select id="adminCategory" class="admin-select" onchange="applyAdminFilters()">
+                    <option value="">🍜 업종 전체</option><option value="한식">한식</option><option value="중식">중식</option><option value="일식">일식</option><option value="양식">양식</option><option value="분식">분식</option><option value="고기/구이">고기/구이</option><option value="회/해산물">회/해산물</option><option value="아시안">아시안</option><option value="술집">술집</option><option value="카페/디저트">카페/디저트</option><option value="빵집">빵집</option><option value="패스트푸드">패스트푸드</option><option value="포장/배달">포장/배달</option>
+                </select>
+                <select id="adminPurpose" class="admin-select" onchange="applyAdminFilters()">
+                    <option value="">✨ 분위기 전체</option><option value="노포">노포</option><option value="데이트">데이트</option><option value="단체회식">단체회식</option><option value="혼밥/혼술">혼밥/혼술</option><option value="무한리필">무한리필</option><option value="이색맛집">이색맛집</option><option value="뷰맛집">뷰맛집</option><option value="상견례">상견례</option><option value="야간영업">야간영업</option>
+                </select>
+
+                <input type="text" id="adminSearch" class="admin-search-input" placeholder="🔍 이름 검색" onkeyup="applyAdminFilters()">
             </div>
+            
             <div style="display:flex; gap:5px;">
-                <button onclick="openBulkModal()" style="background:#f1c40f; color:#333; border:none; padding:6px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:12px;">⚡ 일괄</button>
-                <button onclick="openAddModal()" style="background:#2c3e50; color:white; border:none; padding:6px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:12px;">➕ 개별</button>
-                <button onclick="location.href='index.html'" style="background:white; color:#c0392b; border:none; padding:6px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:12px;">나가기</button>
+                <button onclick="openBulkModal()" style="background:#f1c40f; color:#333; border:none; padding:6px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:12px; white-space:nowrap;">⚡ 일괄</button>
+                <button onclick="openAddModal()" style="background:#2c3e50; color:white; border:none; padding:6px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:12px; white-space:nowrap;">➕ 추가</button>
+                <button onclick="location.href='index.html'" style="background:white; color:#c0392b; border:none; padding:6px 10px; border-radius:5px; font-weight:bold; cursor:pointer; font-size:12px; white-space:nowrap;">나가기</button>
             </div>
         </div>
 
@@ -201,7 +214,6 @@
         }
         loadThemes();
         
-        // ... (테마 관련 함수들은 기존과 동일) ...
         window.toggleThemeMode = function() {
             const val = document.getElementById('adminThemeSelect').value;
             currentThemeMode = val;
@@ -218,8 +230,7 @@
             const newName = prompt("새 이름:", oldName); if(!newName || newName===oldName) return;
             themeList = themeList.map(t => t === oldName ? newName : t); themeList.sort();
             await setDoc(doc(db, "meta", "themes"), { list: themeList });
-            // 배치 처리 (생략 가능하나 안전을 위해 기존 로직 유지)
-            alert("변경됨 (데이터 업데이트는 백그라운드)"); loadThemes();
+            alert("변경됨"); loadThemes();
         }
         window.deleteTheme = async function() {
             const target = $('#adminThemeSelect').val(); if(!target) return alert("선택필요");
@@ -261,39 +272,50 @@
 
         onSnapshot(collection(db, "shops"), (snapshot) => {
             allShopsData = []; snapshot.forEach(doc => allShopsData.push({ id: doc.id, ...doc.data() }));
-            renderMarkers(allShopsData);
+            applyAdminFilters(); 
         });
 
-        function renderMarkers(shops) {
-            markerList.forEach(m => m.setMap(null)); markerList = [];
-            const groups = {};
-            shops.forEach(s => { if(!s.lat)return; const k=s.lat.toFixed(5)+","+s.lng.toFixed(5); if(!groups[k])groups[k]=[]; groups[k].push(s); });
-            for(const k in groups) createMarker(map, groups[k], handleMarkerClick);
+        window.applyAdminFilters = function() {
+            var region = $('#adminRegion').val();
+            var category = $('#adminCategory').val();
+            var purpose = $('#adminPurpose').val();
+            var keyword = $('#adminSearch').val().toLowerCase().replace(/\s+/g, '');
+
+            var filtered = allShopsData.filter(shop => {
+                var matchRegion = (region === "") || (shop.region === region);
+                var shopCats = Array.isArray(shop.category) ? shop.category : [shop.category];
+                var matchCategory = (category === "") || shopCats.includes(category);
+                var shopPurps = Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose];
+                var matchPurpose = (purpose === "") || shopPurps.includes(purpose);
+                var searchableText = (shop.name + " " + (shop.menu || "") + " " + (shop.area || "") + " " + shopCats.join(" ")).toLowerCase().replace(/\s+/g, '');
+                var matchKeyword = (keyword === "") || searchableText.includes(keyword);
+                return matchRegion && matchCategory && matchPurpose && matchKeyword;
+            });
+            renderMarkers(filtered);
         }
 
-        $('#adminSearch').on('keydown', function(e) {
-            if(e.key==='Enter') {
-                const k = $(this).val().toLowerCase().replace(/\s+/g,'');
-                if(!k) { renderMarkers(allShopsData); return; }
-                const f = allShopsData.filter(s=>s.name && s.name.toLowerCase().replace(/\s+/g,'').includes(k));
-                renderMarkers(f); if(f.length>0 && f[0].lat) map.morph(new naver.maps.LatLng(f[0].lat, f[0].lng), 17);
-                $(this).blur();
+        function renderMarkers(shops) {
+            // 🔥 [수정됨] 마커를 지울 때 '진짜로' 지우기 위해 목록 관리
+            markerList.forEach(m => m.setMap(null)); 
+            markerList = []; // 목록 초기화
+            
+            const groups = {};
+            shops.forEach(s => { if(!s.lat)return; const k=s.lat.toFixed(5)+","+s.lng.toFixed(5); if(!groups[k])groups[k]=[]; groups[k].push(s); });
+            
+            for(const k in groups) {
+                // 🔥 [중요] 새로 만든 마커를 markerList에 반드시 넣어야 나중에 지울 수 있음
+                var marker = createMarker(map, groups[k], handleMarkerClick);
+                if (marker) markerList.push(marker); 
             }
-        });
+        }
 
-        // 🔥 [수정] 수정 모달 열 때 (지역 & 핫플 체크박스 불러오기)
         window.openEditModal = function(d) {
             $('#shopId').val(d.id); 
             $('#shopName').val(d.name); 
-            
-            // 🔥 지역값 불러오기 (이게 없어서 에러났었음)
             $('#shopRegion').val(d.region || ""); 
             $('#shopArea').val(d.area); 
             $('#shopMenu').val(d.menu);
-            
-            // 🔥 핫플 여부 불러오기
             $('#shopIsHot').prop('checked', d.isHot === true);
-
             $('#shopParking').val(d.parking || ""); 
             $('#shopTotalScore').val(d.totalScore); 
             $('#shopDesc').val(d.desc); 
@@ -302,10 +324,8 @@
             $('#shopLink').val(d.link);
             $('#shopLat').val(d.lat); $('#shopLng').val(d.lng);
             $('#dupMsg').text('');
-            
             renderCheckboxes('categoryContainer', 'category', CAT_LIST, d.category);
             renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, d.purpose);
-            
             $('#btnDelete').show(); $('.modal-title').text('📝 정보 수정'); $('#shopModal').addClass('show');
         }
 
@@ -318,15 +338,12 @@
 
         async function geocodeAddress(addr) { return new Promise(r=>{ naver.maps.Service.geocode({query:addr}, (s,res)=>{ if(s===naver.maps.Service.Status.OK && res.v2.addresses.length>0) r({lat:parseFloat(res.v2.addresses[0].y), lng:parseFloat(res.v2.addresses[0].x)}); else r(null); }); }); }
 
-        // 🔥 [수정] 저장 함수 (지역값 및 핫플 여부 저장)
         window.saveShop = async function() {
             var id = $('#shopId').val();
             var name = $('#shopName').val().trim();
             if (!name) { alert("⛔ 업체명을 입력해주세요!"); $('#shopName').focus(); return; }
-
-            // 🔥 지역값 체크
             var region = $('#shopRegion').val();
-            if (!region) { alert("⛔ 지역(중구, 수성구 등)을 선택해주세요!"); $('#shopRegion').focus(); return; }
+            if (!region) { alert("⛔ 지역을 선택해주세요!"); $('#shopRegion').focus(); return; }
 
             var lat = parseFloat($('#shopLat').val()); var lng = parseFloat($('#shopLng').val());
             var address = $('#shopAddress').val().trim();
@@ -343,20 +360,13 @@
 
             var data = {
                 name: name, category: [], purpose: [],
-                region: region, // 🔥 이제 저장됨!
-                area: $('#shopArea').val(), 
-                menu: $('#shopMenu').val(),
-                
-                isHot: $('#shopIsHot').is(':checked'), // 🔥 핫플 여부 저장
-
-                parking: $('#shopParking').val(), 
-                totalScore: rawScore, 
-                desc: $('#shopDesc').val(), 
+                region: region, area: $('#shopArea').val(), menu: $('#shopMenu').val(),
+                isHot: $('#shopIsHot').is(':checked'),
+                parking: $('#shopParking').val(), totalScore: rawScore, desc: $('#shopDesc').val(), 
                 address: address, imageUrl: $('#shopImage').val(), link: $('#shopLink').val(),
                 lat: lat, lng: lng, updatedAt: new Date(),
                 themes: allShopsData.find(s => s.id === id)?.themes || [] 
             };
-
             document.querySelectorAll('input[name="category"]').forEach(node => { if(node.checked) data.category.push(node.value); });
             document.querySelectorAll('input[name="purpose"]').forEach(node => { if(node.checked) data.purpose.push(node.value); });
 
@@ -371,11 +381,7 @@
             var id = $('#shopId').val(); if(!id) return;
             if(confirm("삭제?")) { try{ await deleteDoc(doc(db,"shops",id)); alert("삭제됨"); closeModal(); }catch(e){alert("실패");} }
         }
-        window.processBulkData = async function() {
-            // (일괄등록 로직 생략 - 기존과 동일하게 유지)
-            // 필요하면 이전 코드 복붙해서 넣으셔도 됩니다.
-            alert("일괄 등록 기능은 필요시 기존 코드에서 복사해주세요.");
-        }
+        window.processBulkData = async function() { alert("일괄 등록 기능은 필요시 기존 코드에서 복사해주세요."); }
         
         naver.maps.Event.addListener(map, 'click', function(e) {
             if(currentThemeMode) return; 

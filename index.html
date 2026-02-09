@@ -51,13 +51,29 @@
             </div>
         </div>
     </div>
+    </div>
+
+    </div> 
+    <div id="userStatusCard" style="position: absolute; top: 150px; right: 10px; z-index: 90; display:flex; justify-content: flex-end; width: auto;">
+        <button id="btnLogin" onclick="googleLogin()" style="background:white; border:1px solid #ddd; padding:8px 12px; border-radius:20px; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.1); cursor:pointer; display:flex; align-items:center; gap:5px; color:#444;">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18"> 
+            구글 로그인
+        </button>
+
+        <div id="myProfile" style="display:none; background:white; border:1px solid #3498db; padding:6px 12px; border-radius:20px; box-shadow:0 2px 5px rgba(0,0,0,0.1); align-items:center; gap:8px;">
+            <span id="userLevelBadge" style="background:#3498db; color:white; font-size:11px; padding:2px 6px; border-radius:10px; font-weight:bold;">LV.1</span>
+            <span id="userName" style="font-size:13px; font-weight:bold; color:#333;">홍길동</span>
+            <button onclick="googleLogout()" style="border:none; background:#f1f3f5; color:#555; font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:5px; font-weight:bold;">로그아웃</button>
+        </div>
+    </div>
+    <div id="faqPanel" class="faq-panel">
 
     <div id="faqPanel" class="faq-panel">
         <div class="faq-header"><h3>자주 묻는 질문</h3><button class="faq-close" onclick="toggleFaq()">✕</button></div>
         <div class="faq-body">
             <div class="faq-item"><div class="faq-q">Q. '대구보물지도'는 무엇인가요?</div><div class="faq-a">대구 찐맛집 정보를 한눈에 볼 수 있는 서비스입니다.</div></div>
             <div class="faq-item"><div class="faq-q">Q. 어떤 기준으로 선정되나요?</div><div class="faq-a">'대구 찐맛집 평가단'이 직접 검증하고 엄선한 로컬 찐맛집 & 핫플만 모았습니다.</div></div>
-            <div class="faq-item"><div class="faq-q">Q. 우리 가게도 등록하고 싶어요!</div><div class="faq-a">우측 하단 [보물지도 등록요청] 버튼을 눌러 신청해주세요.</div></div>
+            <div class="faq-item"><div class="faq-q">Q. 우리 가게도 등록하고 싶어요!</div><div class="faq-a">오픈채팅 [대구 찐맛집 소통방]에서 요청해주세요.</div></div>
             
             <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
             <div style="display:flex; flex-direction:column; gap:10px;">
@@ -189,8 +205,7 @@
             </button>
         </div>
         <div class="bottom-right">
-            <button class="bar-btn" style="background:#e67e22; color:white; border:none;" onclick="window.open('http://pf.kakao.com/_dmaAG')">🌟 보물지도 등록요청</button>
-        </div>
+            </div>
     </div>
 
     <div id="map"></div>
@@ -296,8 +311,8 @@
         </script>
 
     <script type="module">
-    import { db, initMap, createMarker } from "./common.js";
-    import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { db, initMap, createMarker, auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged } from "./common.js";
+    import { collection, getDocs, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // 1. 지도 및 기본 변수 초기화
     var map = initMap();
@@ -619,7 +634,7 @@
     if ('serviceWorker' in navigator) {
         // 🔥 [수정] new Date().getTime()을 지우고, 직접 버전 숫자를 적어주세요.
         // 나중에 업데이트할 때만 이 숫자를 v=2.2 -> v=2.3 처럼 바꿔주시면 됩니다.
-        navigator.serviceWorker.register('./sw.js?v=2.2') 
+        navigator.serviceWorker.register('./sw.js?v=2.4') 
             .then(reg => {
                 console.log('서비스 워커 등록 완료:', reg);
                 
@@ -643,6 +658,94 @@
     if (isIos) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("📲 아이폰 설치 방법\n\n1. 사파리(Safari) 브라우저 하단 '공유' 버튼 클릭\n2. 메뉴를 내려서 '홈 화면에 추가' 선택\n3. 바탕화면에 '대구핫플여기' 앱 생성!")); } 
     else if (isInApp) { installBtn.style.display = 'block'; installBtn.addEventListener('click', () => alert("🚫 현재 브라우저에서는 다운로드가 제한됩니다.\n\n우측 하단(또는 상단)의 [더보기 ···] 버튼을 누르고\n[다른 브라우저로 열기]를 선택해주세요!")); }
     else { window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; }); installBtn.addEventListener('click', (e) => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then((choiceResult) => { if (choiceResult.outcome === 'accepted') installBtn.style.display = 'none'; deferredPrompt = null; }); } else alert("이미 설치됨"); }); }
+// ==========================================
+    // 🔥 [추가됨] 로그인 & 레벨업 시스템 로직
+    // ==========================================
+    
+    // 1. 로그인 함수 (전역 window에 연결)
+    window.googleLogin = function() {
+        signInWithPopup(auth, googleProvider)
+            .then((result) => {
+                checkUserDB(result.user); // DB 확인 및 생성
+            }).catch((error) => {
+                alert("로그인 실패: " + error.message);
+            });
+    };
+
+    // 2. 로그아웃 함수
+    window.googleLogout = function() {
+        if(confirm("로그아웃 하시겠습니까?")) {
+            signOut(auth).then(() => {
+                alert("로그아웃 되었습니다.");
+                location.reload();
+            });
+        }
+    };
+
+    // 3. 로그인 상태 감지 (켜자마자 실행됨)
+    onAuthStateChanged(auth, async (user) => {
+        const btnLogin = document.getElementById('btnLogin');
+        const myProfile = document.getElementById('myProfile');
+        
+        if (user) {
+            // 로그인 상태
+            btnLogin.style.display = 'none';
+            myProfile.style.display = 'flex';
+            document.getElementById('userName').innerText = user.displayName;
+            
+            // DB에서 레벨 가져오기
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+            if(userSnap.exists()) {
+                const data = userSnap.data();
+                const lv = calculateLevel(data.exp || 0);
+                document.getElementById('userLevelBadge').innerText = `LV.${lv}`;
+            }
+        } else {
+            // 로그아웃 상태
+            btnLogin.style.display = 'flex';
+            myProfile.style.display = 'none';
+        }
+    });
+
+    // 4. DB에 사용자 정보 없으면 만들기 (가입 처리)
+    async function checkUserDB(user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+            // 신규 가입자: 레벨 1, 경험치 0으로 시작
+            await setDoc(userRef, {
+                name: user.displayName,
+                email: user.email,
+                photo: user.photoURL,
+                exp: 0, // 경험치
+                level: 1,
+                createdAt: new Date()
+            });
+            alert(`반갑습니다, ${user.displayName}님! \n대구 보물지도 레벨 1부터 시작합니다! 🚩`);
+        } else {
+            alert(`어서오세요, ${user.displayName}님!`);
+        }
+    }
+
+    // 5. 레벨 계산기 (경험치 10점마다 1업)
+    function calculateLevel(exp) {
+        return 1 + Math.floor(exp / 10);
+    }
+
+    // 🔥 테스트용: 사장님만 쓸 수 있는 '경험치 올리기' 버튼 기능 (나중에 QR코드로 교체)
+    window.testLevelUp = async function() {
+        const user = auth.currentUser;
+        if(!user) return alert("로그인 먼저 해주세요!");
+        
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, {
+            exp: increment(10) // 경험치 +10
+        });
+        alert("✨ 맛집 방문 인증 완료! 경험치 +10 획득!");
+        location.reload(); // 새로고침해서 레벨 반영
+    }
 </script>
 </body>
 </html>
