@@ -40,12 +40,14 @@
                 <select id="filterCategory" class="search-select" onchange="applyAllFilters()"><option value="">🍜 업종 전체</option><option value="한식">한식</option><option value="중식">중식</option><option value="일식">일식</option><option value="양식">양식</option><option value="분식">분식</option><option value="고기/구이">고기/구이</option><option value="회/해산물">회/해산물</option><option value="아시안">아시안</option><option value="술집">술집</option><option value="카페/디저트">카페/디저트</option><option value="빵집">빵집</option><option value="패스트푸드">패스트푸드</option><option value="포장/배달">포장/배달</option></select>
                 <select id="filterPurpose" class="search-select" onchange="applyAllFilters()"><option value="">✨ 분위기 전체</option><option value="노포">노포</option><option value="데이트">데이트</option><option value="단체회식">단체회식</option><option value="혼밥/혼술">혼밥/혼술</option><option value="무한리필">무한리필</option><option value="이색맛집">이색맛집</option><option value="뷰맛집">뷰맛집</option><option value="상견례">상견례</option><option value="야간영업">야간영업</option></select>
             </div>
-            <div class="search-input-row">
+            
+            <div class="search-input-row" style="display:flex; align-items:center;">
                 <span class="search-icon">🔍</span>
-                <input type="text" id="keyword" class="search-input" placeholder="예: 동성로 두바이" onchange="applyAllFilters()">
-                <div class="search-filters">
-                    <button id="btnShowLikes" onclick="toggleLikeFilter()" style="background:white; border:1px solid #e74c3c; color:#e74c3c; border-radius:6px; padding:8px; font-size:13px; font-weight:bold; cursor:pointer; min-width:80px; display:flex; align-items:center; gap:4px;">🤍 찜만 보기</button>
-                </div>
+                <input type="text" id="keyword" class="search-input" placeholder="예: 동성로 두바이" onchange="applyAllFilters()" style="flex:1;">
+                
+                <button id="btnShowLikes" onclick="toggleLikeFilter()" style="background:white; border:1px solid #e74c3c; color:#e74c3c; border-radius:20px; padding:6px 12px; font-size:12px; font-weight:bold; cursor:pointer; margin-left:8px; white-space:nowrap; flex-shrink:0; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                    🤍 찜만 보기
+                </button>
             </div>
         </div>
     </div>
@@ -377,6 +379,8 @@
             updateVisibleMarkers();
         }
 
+        // 2. [수정됨] 필터 로직 (전체 보기에서 주차장 숨기기 기능 추가)
+        // 2. [최종 수정] 필터 로직 (전체 보기에서 주차장 완벽 차단)
         function filterShops(shops) {
             var theme = $('#mainThemeSelect').val();
             var region = $('#filterRegion').val();
@@ -384,23 +388,36 @@
             var purpose = $('#filterPurpose').val();
             var keywordInput = $('#keyword').val() || "";
             var keywords = keywordInput.toLowerCase().trim().split(/\s+/).filter(t => t.length > 0);
+            
             const user = auth.currentUser;
 
             return shops.filter(shop => {
+                // 1. 찜 필터
                 if (isLikeFilterOn) {
                     if (!user || !shop.likedBy || !shop.likedBy.includes(user.uid)) return false;
                 }
-                var matchTheme = true;
-                if (theme && theme !== 'ALL') { if (!shop.themes || !shop.themes.includes(theme)) matchTheme = false; }
+
+                // 🔥 [핵심] 테마 필터링 (주차장 숨기기)
+                if (theme === 'ALL') {
+                    // 전체 보기일 때: 카테고리가 '주차장'이면 무조건 숨김 (return false)
+                    if (shop.category && (shop.category.includes("주차장") || shop.category === "주차장")) return false;
+                } else {
+                    // 특정 테마 선택 시: 그 테마 태그가 없으면 숨김
+                    if (!shop.themes || !shop.themes.includes(theme)) return false;
+                }
+
+                // 3. 나머지 필터
                 var matchRegion = (region === "") || (shop.region === region);
                 var shopCategories = Array.isArray(shop.category) ? shop.category : [shop.category];
                 var matchCategory = (category === "") || shopCategories.includes(category);
                 var shopPurposes = Array.isArray(shop.purpose) ? shop.purpose : [shop.purpose];
                 var matchPurpose = (purpose === "") || shopPurposes.includes(purpose);
+                
                 var searchableText = (shop.name + " " + (shop.menu || "") + " " + (shop.area || "") + " " + (shop.address || "") + " " + shopCategories.join(" ")).toLowerCase();
                 var matchKeyword = true;
                 if (keywords.length > 0) { matchKeyword = keywords.every(term => searchableText.includes(term)); }
-                return matchTheme && matchRegion && matchCategory && matchPurpose && matchKeyword;
+                
+                return matchRegion && matchCategory && matchPurpose && matchKeyword;
             });
         }
 
@@ -644,7 +661,6 @@
             else { btnLink.href = '#'; btnLink.style.display = 'none'; }
 
             const panelBody = document.querySelector('.panel-body');
-            // 기존에 추가된 동적 버튼들 삭제
             const oldBtns = panelBody.querySelectorAll('.dynamic-btn');
             oldBtns.forEach(btn => btn.remove());
 
