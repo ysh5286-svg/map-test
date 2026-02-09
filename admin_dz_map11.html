@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>관리자 모드 (기능 완전 복구)</title>
+    <title>관리자 모드 (이름변경 완벽구현)</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=krsv42ftzf&submodules=geocoder"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
@@ -18,8 +18,11 @@
         .theme-tagged { border: 3px solid #2ecc71 !important; background-color: #e8f8f5 !important; z-index: 8000 !important; transform: translate(-50%, -100%) scale(1.1) !important; }
         .tag-check-icon { position: absolute; top: -12px; right: -12px; background: #2ecc71; color: white; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 14px; font-weight: bold; border: 2px solid white; z-index: 9000; }
         .check-item { display: inline-block; margin-right: 10px; margin-bottom: 5px; font-size: 13px; cursor: pointer; }
-        .shop-select-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .shop-select-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .shop-select-item:hover { background: #f9f9f9; }
+        .shop-info-box { flex: 1; cursor: pointer; }
+        .btn-set-top { background: #fff; border: 1px solid #ddd; padding: 5px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; color: #555; }
+        .btn-set-top.is-top { background: #27ae60; color: white; border-color: #27ae60; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -29,8 +32,8 @@
                 <strong style="white-space:nowrap;">🔒 관리</strong>
                 <button id="googleLoginBtn" onclick="tryLogin()">G 로그인</button>
                 <select id="adminRegion" class="admin-select" onchange="applyAdminFilters()"><option value="">📍 지역 전체</option><option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option></select>
-                <select id="adminCategory" class="admin-select" onchange="applyAdminFilters()"><option value="">🍜 업종 전체</option><option value="주차장">🚗 주차장</option><option value="한식">한식</option><option value="중식">중식</option><option value="일식">일식</option><option value="양식">양식</option><option value="분식">분식</option><option value="고기/구이">고기/구이</option><option value="회/해산물">회/해산물</option><option value="아시안">아시안</option><option value="술집">술집</option><option value="카페/디저트">카페/디저트</option><option value="빵집">빵집</option><option value="패스트푸드">패스트푸드</option><option value="포장/배달">포장/배달</option></select>
-                <select id="adminPurpose" class="admin-select" onchange="applyAdminFilters()"><option value="">✨ 분위기 전체</option><option value="설날무료">설날무료</option><option value="노포">노포</option><option value="데이트">데이트</option><option value="단체회식">단체회식</option><option value="혼밥/혼술">혼밥/혼술</option><option value="무한리필">무한리필</option><option value="이색맛집">이색맛집</option><option value="뷰맛집">뷰맛집</option><option value="상견례">상견례</option><option value="야간영업">야간영업</option></select>
+                <select id="adminCategory" class="admin-select" onchange="applyAdminFilters()"><option value="">🍜 업종 전체</option><option value="한식">한식</option><option value="중식">중식</option><option value="일식">일식</option><option value="양식">양식</option><option value="분식">분식</option><option value="고기/구이">고기/구이</option><option value="회/해산물">회/해산물</option><option value="아시안">아시안</option><option value="술집">술집</option><option value="카페/디저트">카페/디저트</option><option value="빵집">빵집</option><option value="패스트푸드">패스트푸드</option><option value="포장/배달">포장/배달</option></select>
+                <select id="adminPurpose" class="admin-select" onchange="applyAdminFilters()"><option value="">✨ 분위기 전체</option><option value="노포">노포</option><option value="데이트">데이트</option><option value="단체회식">단체회식</option><option value="혼밥/혼술">혼밥/혼술</option><option value="무한리필">무한리필</option><option value="이색맛집">이색맛집</option><option value="뷰맛집">뷰맛집</option><option value="상견례">상견례</option><option value="야간영업">야간영업</option></select>
                 <input type="text" id="adminSearch" class="admin-search-input" placeholder="🔍 이름 검색" onkeyup="applyAdminFilters()">
             </div>
             <div style="display:flex; gap:5px;">
@@ -54,34 +57,12 @@
     <div id="map"></div>
     <div id="toast" class="toast-msg">처리되었습니다</div>
 
-    <div id="bulkModal" class="modal-overlay">
-        <div class="modal-box" style="max-width:600px;">
-            <button class="modal-close-x" onclick="closeBulkModal()">×</button>
-            <h3 class="modal-title">⚡ 만능 이벤트 일괄 등록</h3>
-            <div style="background:#ffe3e3; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ff6b6b;">
-                <p style="font-size:12px; color:#c0392b; font-weight:bold; margin:0 0 5px 0;">🚨 데이터 초기화 (신중하게!)</p>
-                <button onclick="deleteAllEventData()" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ 이 카테고리 데이터 모두 삭제</button>
-            </div>
-            <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;">
-                <div style="margin-bottom:10px;">
-                    <label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">🏷️ 테마 이름 (지도 메뉴에 뜰 이름)</label>
-                    <input type="text" id="bulkThemeName" class="form-input" value="02. 테마 이름" style="font-weight:bold; color:#e74c3c;">
-                </div>
-                <div class="form-grid">
-                    <div><label style="font-size:12px; font-weight:bold;">📂 카테고리</label><input type="text" id="bulkCategory" class="form-input" value="주차장"></div>
-                    <div><label style="font-size:12px; font-weight:bold;">✨ 목적/태그</label><input type="text" id="bulkPurpose" class="form-input" value="설날무료"></div>
-                </div>
-            </div>
-            <textarea id="bulkDataInput" class="bulk-textarea" placeholder='[JSON 데이터 붙여넣기]'></textarea>
-            <div id="bulkStatus" class="bulk-status"></div>
-            <div class="modal-btns"><button class="btn-save" style="background:#2c3e50; color:white;" onclick="processBulkData()">🚀 등록 실행</button></div>
-        </div>
-    </div>
+    <div id="bulkModal" class="modal-overlay"><div class="modal-box" style="max-width:600px;"><button class="modal-close-x" onclick="closeBulkModal()">×</button><h3 class="modal-title">⚡ 만능 이벤트 일괄 등록</h3><div style="background:#ffe3e3; padding:10px; margin-bottom:10px; border-radius:5px; border:1px solid #ff6b6b;"><p style="font-size:12px; color:#c0392b; font-weight:bold; margin:0 0 5px 0;">🚨 데이터 초기화 (신중하게!)</p><button onclick="deleteAllEventData()" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ 이 카테고리 데이터 모두 삭제</button></div><div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;"><div style="margin-bottom:10px;"><label style="font-size:12px; font-weight:bold; display:block; margin-bottom:4px;">🏷️ 테마 이름 (지도 메뉴에 뜰 이름)</label><input type="text" id="bulkThemeName" class="form-input" value="02. 테마 이름" style="font-weight:bold; color:#e74c3c;"></div><div class="form-grid"><div><label style="font-size:12px; font-weight:bold;">📂 카테고리</label><input type="text" id="bulkCategory" class="form-input" value="주차장"></div><div><label style="font-size:12px; font-weight:bold;">✨ 목적/태그</label><input type="text" id="bulkPurpose" class="form-input" value="설날무료"></div></div></div><textarea id="bulkDataInput" class="bulk-textarea" placeholder='[JSON 데이터 붙여넣기]'></textarea><div id="bulkStatus" class="bulk-status"></div><div class="modal-btns"><button class="btn-save" style="background:#2c3e50; color:white;" onclick="processBulkData()">🚀 등록 실행</button></div></div></div>
 
     <div id="selectModal" class="modal-overlay">
         <div class="modal-box">
             <button class="modal-close-x" onclick="closeSelectModal()">×</button>
-            <h3 class="modal-title" style="font-size:16px; margin-bottom:15px;">👇 수정할 매장을 선택하세요</h3>
+            <h3 class="modal-title" style="font-size:16px; margin-bottom:15px;">👇 겹친 매장 목록 (대표 설정 가능)</h3>
             <div id="selectList" class="shop-select-list"></div>
         </div>
     </div>
@@ -91,29 +72,11 @@
             <button class="modal-close-x" onclick="closeModal()">×</button>
             <h3 class="modal-title">업체 정보 관리</h3>
             <input type="hidden" id="shopId"><input type="hidden" id="shopLat"><input type="hidden" id="shopLng">
+            <input type="hidden" id="shopPriority">
             <div class="form-group"><label class="form-label">업체명 <span id="dupMsg" class="dup-msg"></span></label><input type="text" id="shopName" class="form-input" placeholder="상호명을 입력하세요" autocomplete="off"></div>
-            <div class="form-group" style="background:#f8f9fa; padding:10px; border:1px solid #ddd; border-radius:5px;">
-                <label class="form-label">👑 사장님 UID 연결 (선택)</label>
-                <input type="text" id="shopOwnerId" class="form-input" placeholder="유저에게 받은 UID 붙여넣기" style="font-family:monospace; font-size:12px;">
-            </div>
-            <div class="hot-check-wrapper" style="margin:10px 0; background:#ffe3e3; padding:10px; border-radius:5px;"><label class="hot-check-label" style="font-weight:bold; color:#c0392b;"><input type="checkbox" id="shopIsHot" class="hot-check-input"> 🔥 지도에서 강조하기 (테두리 + 불꽃)</label></div>
-            <div class="form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div class="form-group"><label class="form-label">📍 지역 (필수)</label><select id="shopRegion" class="form-input"><option value="">선택하세요</option><option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option></select></div>
-                <div class="form-group"><label class="form-label">상권</label><input type="text" id="shopArea" class="form-input" autocomplete="off"></div>
-            </div>
-            <div class="form-group"><label class="form-label">대표메뉴</label><input type="text" id="shopMenu" class="form-input" autocomplete="off"></div>
-            <div class="form-group"><label class="form-label">🚗 주차 정보</label><select id="shopParking" class="form-input"><option value="">선택하세요</option><option value="❌ 주차 불가">❌ 주차 불가</option><option value="⚠️ 주차 협소">⚠️ 주차 협소 (1~2대)</option><option value="🅿️ 주차장 완비">🅿️ 주차장 완비</option><option value="🅿️ 무료 개방">🅿️ 무료 개방</option></select></div>
-            <div class="form-group"><label class="form-label">⭐ 별점</label><input type="number" id="shopTotalScore" class="form-input" step="0.25" max="5.0"></div>
-            <div class="form-group"><label class="form-label">🗨️ 한줄평</label><textarea id="shopDesc" class="form-textarea" rows="2"></textarea></div>
-            <div class="form-group"><label class="form-label">주소</label><input type="text" id="shopAddress" class="form-input"></div>
-            <div class="form-group"><label class="form-label">이미지 URL</label><input type="text" id="shopImage" class="form-input"></div>
-            <div class="form-group"><label class="form-label">네이버 링크</label><input type="text" id="shopLink" class="form-input"></div>
-            <div class="form-group"><label class="form-label">업종</label><div class="multi-select-container" id="categoryContainer"></div></div>
-            <div class="form-group"><label class="form-label">목적</label><div class="multi-select-container" id="purposeContainer"></div></div>
-            <div class="modal-btns" style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn-delete" id="btnDelete" onclick="deleteCurrentShop()" style="flex:1; background:#e74c3c; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">삭제</button>
-                <button class="btn-save" onclick="saveShop()" style="flex:1; background:#2c3e50; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">저장</button>
-            </div>
+            <div class="form-group" style="background:#f8f9fa; padding:10px; border:1px solid #ddd; border-radius:5px;"><label class="form-label">👑 사장님 UID 연결 (선택)</label><input type="text" id="shopOwnerId" class="form-input" placeholder="유저에게 받은 UID 붙여넣기" style="font-family:monospace; font-size:12px;"></div>
+            <div class="hot-check-wrapper" style="margin:10px 0; background:#ffe3e3; padding:10px; border-radius:5px;"><label class="hot-check-label" style="font-weight:bold; color:#c0392b; font-size:13px;"><input type="checkbox" id="shopIsHot" class="hot-check-input"> 🔥 핫플 강조</label></div>
+            <div class="form-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;"><div class="form-group"><label class="form-label">📍 지역 (필수)</label><select id="shopRegion" class="form-input"><option value="">선택하세요</option><option value="중구">중구</option><option value="수성구">수성구</option><option value="동구">동구</option><option value="서구">서구</option><option value="남구">남구</option><option value="북구">북구</option><option value="달서구">달서구</option><option value="달성군">달성군</option><option value="경산">경산</option><option value="군위군">군위군</option><option value="칠곡군">칠곡군</option><option value="대구 밖">대구 밖</option></select></div><div class="form-group"><label class="form-label">상권</label><input type="text" id="shopArea" class="form-input" autocomplete="off"></div></div><div class="form-group"><label class="form-label">대표메뉴</label><input type="text" id="shopMenu" class="form-input" autocomplete="off"></div><div class="form-group"><label class="form-label">🚗 주차 정보</label><select id="shopParking" class="form-input"><option value="">선택하세요</option><option value="❌ 주차 불가">❌ 주차 불가</option><option value="⚠️ 주차 협소">⚠️ 주차 협소 (1~2대)</option><option value="🅿️ 주차장 완비">🅿️ 주차장 완비</option><option value="🅿️ 무료 개방">🅿️ 무료 개방</option></select></div><div class="form-group"><label class="form-label">⭐ 별점</label><input type="number" id="shopTotalScore" class="form-input" step="0.25" max="5.0"></div><div class="form-group"><label class="form-label">🗨️ 한줄평</label><textarea id="shopDesc" class="form-textarea" rows="2"></textarea></div><div class="form-group"><label class="form-label">주소</label><input type="text" id="shopAddress" class="form-input"></div><div class="form-group"><label class="form-label">이미지 URL</label><input type="text" id="shopImage" class="form-input"></div><div class="form-group"><label class="form-label">네이버 링크</label><input type="text" id="shopLink" class="form-input"></div><div class="form-group"><label class="form-label">업종</label><div class="multi-select-container" id="categoryContainer"></div></div><div class="form-group"><label class="form-label">목적</label><div class="multi-select-container" id="purposeContainer"></div></div><div class="modal-btns" style="display:flex; gap:10px; margin-top:20px;"><button class="btn-delete" id="btnDelete" onclick="deleteCurrentShop()" style="flex:1; background:#e74c3c; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">삭제</button><button class="btn-save" onclick="saveShop()" style="flex:1; background:#2c3e50; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">저장</button></div>
         </div>
     </div>
 
@@ -129,68 +92,136 @@
         let allShopsData = [];
         let currentThemeMode = ""; 
         let themeList = []; 
-        const CAT_LIST = ['한식', '중식', '일식', '양식', '분식', '고기/구이', '회/해산물', '아시안', '술집', '카페/디저트', '빵집', '패스트푸드', '포장/배달', '주차장'];
-        const PUR_LIST = ['노포', '데이트', '단체회식', '혼밥/혼술', '무한리필', '이색맛집', '뷰맛집', '상견례', '야간영업', '설날무료'];
+        const CAT_LIST = ['한식', '중식', '일식', '양식', '분식', '고기/구이', '회/해산물', '아시안', '술집', '카페/디저트', '빵집', '패스트푸드', '포장/배달'];
+        const PUR_LIST = ['노포', '데이트', '단체회식', '혼밥/혼술', '무한리필', '이색맛집', '뷰맛집', '상견례', '야간영업'];
 
-        // 🔥 버튼 기능 전역 할당
-        window.openBulkModal = function() { $('#bulkModal').addClass('show'); $('#bulkStatus').html(''); }
-        window.closeBulkModal = function() { $('#bulkModal').removeClass('show'); }
-        window.closeModal = function() { $('#shopModal').removeClass('show'); }
-        window.closeSelectModal = function() { $('#selectModal').removeClass('show'); }
-        window.tryLogin = function() { signInWithPopup(auth, googleProvider).then(()=>location.reload()).catch(e=>alert(e.message)); }
+        window.openBulkModal = () => { $('#bulkModal').addClass('show'); $('#bulkStatus').html(''); };
+        window.closeBulkModal = () => $('#bulkModal').removeClass('show');
+        window.closeModal = () => $('#shopModal').removeClass('show');
+        window.closeSelectModal = () => $('#selectModal').removeClass('show');
+        window.tryLogin = () => signInWithPopup(auth, googleProvider).then(()=>location.reload()).catch(e=>alert(e.message));
 
-        // 테마 로드
         async function loadThemes() { 
-            try {
-                const docRef = doc(db, "meta", "themes"); const docSnap = await getDoc(docRef); 
-                const select = document.getElementById('adminThemeSelect'); 
-                select.innerHTML = '<option value="">(기본) 업체 정보 수정 모드</option>'; 
-                if (docSnap.exists()) { 
-                    themeList = docSnap.data().list || []; themeList.sort(); 
-                    themeList.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = `📂 ${t}`; select.appendChild(opt); }); 
-                } 
-            } catch(e) { console.error(e); }
+            try { const docRef = doc(db, "meta", "themes"); const docSnap = await getDoc(docRef); const select = document.getElementById('adminThemeSelect'); select.innerHTML = '<option value="">(기본) 업체 정보 수정 모드</option>'; if (docSnap.exists()) { themeList = docSnap.data().list || []; themeList.sort(); themeList.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.innerText = `📂 ${t}`; select.appendChild(opt); }); } } catch(e) { console.error(e); }
         }
         loadThemes();
 
-        // 🔥 [복구됨] 추가/수정 모달 기능
+        window.applyAdminFilters = function() { 
+            var region = $('#adminRegion').val(); var category = $('#adminCategory').val(); var purpose = $('#adminPurpose').val(); var keyword = $('#adminSearch').val().toLowerCase().replace(/\s+/g, ''); 
+            var filtered = allShopsData.filter(shop => { 
+                var matchRegion = (region === "") || (shop.region === region); 
+                var shopCats = Array.isArray(shop.category) ? shop.category : (shop.category ? [shop.category] : []); 
+                var matchCategory = (category === "") || shopCats.includes(category); 
+                var shopPurps = Array.isArray(shop.purpose) ? shop.purpose : (shop.purpose ? [shop.purpose] : []);
+                var matchPurpose = (purpose === "") || shopPurps.includes(purpose); 
+                var catString = shopCats.join(" ") || ""; 
+                var searchableText = (shop.name + " " + (shop.menu || "") + " " + (shop.area || "") + " " + (shop.address || "") + " " + catString).toLowerCase().replace(/\s+/g, ''); 
+                var matchKeyword = (keyword === "") || searchableText.includes(keyword); 
+                return matchRegion && matchCategory && matchPurpose && matchKeyword; 
+            }); 
+            renderMarkers(filtered); 
+        }
+
+        function renderMarkers(shops) {
+            markerList.forEach(m => m.setMap(null)); markerList = [];
+            const groups = {};
+            shops.forEach(s => {
+                let lat = parseFloat(s.lat); let lng = parseFloat(s.lng);
+                if(!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+                const k = lat.toFixed(5) + "," + lng.toFixed(5);
+                s.isTagged = false;
+                if(currentThemeMode && s.themes && Array.isArray(s.themes) && s.themes.includes(currentThemeMode)) { s.isTagged = true; }
+                if(!groups[k]) groups[k]=[]; groups[k].push(s);
+            });
+            for(let k in groups) {
+                groups[k].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+                let m = createMarker(map, groups[k], handleMarkerClick);
+                if(m) markerList.push(m);
+            }
+        }
+
+        function handleMarkerClick(list) {
+            if(currentThemeMode) {
+                const shop = list[0];
+                const ref = doc(db, "shops", shop.id);
+                const isAdded = shop.isTagged;
+                if(isAdded) updateDoc(ref, { themes: arrayRemove(currentThemeMode) }).then(()=>showToast("➖ 제거됨"));
+                else updateDoc(ref, { themes: arrayUnion(currentThemeMode) }).then(()=>showToast("➕ 추가됨"));
+            } else {
+                if (list.length === 1) {
+                    window.openEditModal(list[0]);
+                } else {
+                    showSelectModal(list, false);
+                }
+            }
+        }
+
         window.openAddModal = function() { 
             $('#shopId').val(''); $('input, textarea, select').val(''); $('#shopIsHot').prop('checked', false); 
-            $('#shopTotalScore').val('0.0');
-            $('#dupMsg').text('');
+            $('#shopTotalScore').val('0.0'); $('#shopPriority').val('0'); $('#dupMsg').text('');
             renderCheckboxes('categoryContainer', 'category', CAT_LIST, []); 
             renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, []); 
-            $('#btnDelete').hide(); 
-            $('.modal-title').text('✨ 새 업체 추가'); // 제목 변경 확실하게
-            $('#shopModal').addClass('show'); 
+            $('#btnDelete').hide(); $('.modal-title').text('✨ 새 업체 추가'); $('#shopModal').addClass('show'); 
         }
 
         window.openEditModal = function(d) { 
             $('#shopId').val(d.id); $('#shopName').val(d.name); $('#shopOwnerId').val(d.ownerId || ""); 
             $('#shopRegion').val(d.region || ""); $('#shopArea').val(d.area); $('#shopMenu').val(d.menu); 
             $('#shopIsHot').prop('checked', d.isHot === true); $('#shopParking').val(d.parking || ""); 
-            $('#shopTotalScore').val(d.totalScore); $('#shopDesc').val(d.desc); $('#shopAddress').val(d.address); 
+            $('#shopTotalScore').val(d.totalScore); $('#shopPriority').val(d.priority || 0); 
+            $('#shopDesc').val(d.desc); $('#shopAddress').val(d.address); 
             $('#shopImage').val(d.imageUrl); $('#shopLink').val(d.link); $('#shopLat').val(d.lat); $('#shopLng').val(d.lng); 
             $('#dupMsg').text(''); 
             renderCheckboxes('categoryContainer', 'category', CAT_LIST, d.category); 
             renderCheckboxes('purposeContainer', 'purpose', PUR_LIST, d.purpose); 
-            $('#btnDelete').show(); 
-            $('.modal-title').text('📝 정보 수정'); // 제목 변경
-            $('#shopModal').addClass('show'); 
+            $('#btnDelete').show(); $('.modal-title').text('📝 정보 수정'); $('#shopModal').addClass('show'); 
         }
 
         function renderCheckboxes(containerId, name, items, selected = []) { 
             const container = document.getElementById(containerId); container.innerHTML = ''; 
             const selectedList = Array.isArray(selected) ? selected : (selected ? [selected] : []); 
-            items.forEach(item => { 
-                const isChecked = selectedList.includes(item); 
-                const label = document.createElement('label'); label.className = 'check-item'; 
-                label.innerHTML = `<input type="checkbox" name="${name}" value="${item}" ${isChecked ? 'checked' : ''}> ${item}`; 
-                container.appendChild(label); 
-            }); 
+            items.forEach(item => { const isChecked = selectedList.includes(item); const label = document.createElement('label'); label.className = 'check-item'; label.innerHTML = `<input type="checkbox" name="${name}" value="${item}" ${isChecked ? 'checked' : ''}> ${item}`; container.appendChild(label); }); 
         }
 
-        // 🔥 [복구됨] 저장/삭제 기능
+        window.showSelectModal = function(list, isThemeMode) { 
+            const container = document.getElementById('selectList'); container.innerHTML = ''; 
+            list.forEach((shop, index) => { 
+                const div = document.createElement('div'); div.className = 'shop-select-item'; 
+                const isTop = (index === 0 && (shop.priority || 0) > 0);
+                const btnClass = isTop ? 'btn-set-top is-top' : 'btn-set-top';
+                const btnText = isTop ? '👑 대표' : '대표설정';
+
+                div.innerHTML = `
+                    <div class="shop-info-box" onclick="editFromList('${shop.id}')">
+                        <span class="shop-select-name">${shop.name}</span>
+                        <span style="font-size:11px; color:#888;">${shop.category || ''}</span>
+                    </div>
+                    <button class="${btnClass}" onclick="setTopShop('${shop.id}')">${btnText}</button>
+                `;
+                container.appendChild(div); 
+            }); 
+            $('#selectModal').addClass('show'); 
+        }
+
+        window.editFromList = function(id) {
+            const shop = allShopsData.find(s => s.id === id);
+            if(shop) { closeSelectModal(); openEditModal(shop); }
+        }
+
+        window.setTopShop = async function(id) {
+            if(!confirm("이 업체를 이 위치의 대표(핀 맨 위)로 설정할까요?")) return;
+            try {
+                await updateDoc(doc(db, "shops", id), { priority: Date.now() });
+                alert("👑 대표 업체로 설정되었습니다!");
+                closeSelectModal();
+            } catch(e) { alert("설정 실패: " + e.message); }
+        }
+
+        onSnapshot(collection(db, "shops"), (snap) => {
+            allShopsData = []; snap.forEach(d => allShopsData.push({id: d.id, ...d.data()}));
+            applyAdminFilters();
+        });
+
         async function geocodeAddress(addr) { return new Promise(r=>{ naver.maps.Service.geocode({query:addr}, (s,res)=>{ if(s===naver.maps.Service.Status.OK && res.v2.addresses.length>0) r({lat:parseFloat(res.v2.addresses[0].y), lng:parseFloat(res.v2.addresses[0].x)}); else r(null); }); }); }
         
         window.saveShop = async function() { 
@@ -201,10 +232,12 @@
             var lat = parseFloat($('#shopLat').val()); var lng = parseFloat($('#shopLng').val()); var address = $('#shopAddress').val().trim(); 
             if (isNaN(lat) || isNaN(lng) || lat===0) { if (!address) { alert("주소 필수"); return; } const res = await geocodeAddress(address); if(res) { lat=res.lat; lng=res.lng; $('#shopLat').val(lat); $('#shopLng').val(lng); } else { alert("주소 찾기 실패"); return; } } 
             let rawScore = parseFloat($('#shopTotalScore').val()) || 0; if (rawScore > 5) { alert("최대 5점입니다."); return; } 
-            
+            let priority = parseInt($('#shopPriority').val()) || 0; 
+
             var data = { 
                 name: name, category: [], purpose: [], region: region, area: $('#shopArea').val(), menu: $('#shopMenu').val(), 
-                isHot: $('#shopIsHot').is(':checked'), parking: $('#shopParking').val(), totalScore: rawScore, 
+                isHot: $('#shopIsHot').is(':checked'), priority: priority, 
+                parking: $('#shopParking').val(), totalScore: rawScore, 
                 desc: $('#shopDesc').val(), address: address, imageUrl: $('#shopImage').val(), link: $('#shopLink').val(), 
                 ownerId: $('#shopOwnerId').val().trim(), lat: lat, lng: lng, updatedAt: new Date(), 
                 themes: allShopsData.find(s => s.id === id)?.themes || [] 
@@ -219,133 +252,52 @@
             } catch (e) { alert("저장 실패: " + e.message); } 
         }
         
-        window.deleteCurrentShop = async function() { 
-            var id = $('#shopId').val(); if(!id) return; 
-            if(confirm("삭제?")) { try{ await deleteDoc(doc(db,"shops",id)); alert("삭제됨"); closeModal(); }catch(e){alert("실패");} } 
-        }
-
-        // 테마 관리
-        window.toggleThemeMode = function() {
-            currentThemeMode = $('#adminThemeSelect').val();
-            document.getElementById('themeModeStatus').style.display = currentThemeMode ? 'block' : 'none';
-            applyAdminFilters();
-        }
-        window.addNewTheme = async function() {
-            const name = prompt("새로운 테마 이름:"); if(!name) return; 
-            if(themeList.includes(name)) return alert("이미 있는 이름입니다.");
-            themeList.push(name); themeList.sort();
-            try { await setDoc(doc(db, "meta", "themes"), { list: themeList }, { merge: true }); alert("추가됨"); loadThemes(); }
-            catch(e) { alert("추가 실패! (규칙 확인 필요): " + e.message); }
-        }
-        window.renameTheme = async function() {
-            const old = $('#adminThemeSelect').val(); if(!old) return alert("테마를 선택하세요.");
-            const newN = prompt("새 이름:", old); if(!newN || newN===old) return;
-            themeList = themeList.map(t => t === old ? newN : t); themeList.sort();
-            try { await setDoc(doc(db, "meta", "themes"), { list: themeList }); alert("변경됨"); loadThemes(); }
-            catch(e) { alert("변경 실패!: " + e.message); }
-        }
-        window.deleteTheme = async function() {
-            const t = $('#adminThemeSelect').val(); if(!t) return alert("테마를 선택하세요.");
-            if(!confirm("삭제합니까?")) return;
-            try { await updateDoc(doc(db, "meta", "themes"), { list: arrayRemove(t) }); alert("삭제됨"); loadThemes(); toggleThemeMode(); }
-            catch(e) { alert("삭제 실패!: " + e.message); }
-        }
-
-        // 일괄 등록
-        window.processBulkData = async function() {
-            const raw = $('#bulkDataInput').val();
-            const theme = $('#bulkThemeName').val().trim();
-            const cat = $('#bulkCategory').val().trim();
-            const purp = $('#bulkPurpose').val().trim();
-            if(!raw || !theme || !cat) return alert("데이터, 테마명, 카테고리는 필수입니다.");
-            const themeRef = doc(db, "meta", "themes");
-            try { await updateDoc(themeRef, { list: arrayUnion(theme) }); } catch(e) { await setDoc(themeRef, { list: [theme] }); }
-            let list; try { list = JSON.parse(raw); } catch(e) { return alert("JSON 형식이 아닙니다."); }
-            const status = document.getElementById('bulkStatus'); status.innerHTML = "🚀 시작...";
-            let count = 0;
-            for(let item of list) {
-                status.innerHTML += `<br>.. ${item.name} 처리중`;
-                let lat=0, lng=0;
-                if(item.address) {
-                    await new Promise(r => naver.maps.Service.geocode({query: item.address}, (s, res) => {
-                        if(res.v2.addresses[0]) { lat = parseFloat(res.v2.addresses[0].y); lng = parseFloat(res.v2.addresses[0].x); }
-                        r();
-                    }));
-                }
-                await addDoc(collection(db, "shops"), {
-                    name: item.name, address: item.address, desc: item.desc || "",
-                    category: [cat], purpose: [purp], region: item.region || "대구", themes: [theme], 
-                    lat: lat, lng: lng, createdAt: new Date(), updatedAt: new Date(),
-                    parking: "정보 없음", totalScore: 5.0, isHot: false
-                });
-                count++; await new Promise(r => setTimeout(r, 100));
-            }
-            alert(`${count}건 등록 완료!`); location.reload();
-        }
-
-        window.deleteAllEventData = async function() {
-            const cat = $('#bulkCategory').val().trim();
-            if(!cat) return alert("삭제할 카테고리 입력하세요.");
-            if(!confirm(`'${cat}' 카테고리 데이터를 모두 삭제합니까?`)) return;
-            const q = query(collection(db, "shops"), where("category", "array-contains", cat));
-            const snaps = await getDocs(q);
-            const batch = writeBatch(db);
-            snaps.forEach(d => batch.delete(d.ref));
-            await batch.commit();
-            alert("삭제 완료"); location.reload();
-        }
-
-        onSnapshot(collection(db, "shops"), (snap) => {
-            allShopsData = []; snap.forEach(d => allShopsData.push({id: d.id, ...d.data()}));
-            applyAdminFilters();
-        });
-
-        function renderMarkers(shops) {
-            markerList.forEach(m => m.setMap(null)); markerList = [];
-            const groups = {};
-            shops.forEach(s => {
-                if(!s.lat) return; const k = s.lat+","+s.lng;
-                s.isTagged = false;
-                if(currentThemeMode && s.themes && Array.isArray(s.themes) && s.themes.includes(currentThemeMode)) { s.isTagged = true; }
-                if(!groups[k]) groups[k]=[]; groups[k].push(s);
-            });
-            for(let k in groups) {
-                let m = createMarker(map, groups[k], handleMarkerClick);
-                if(m) markerList.push(m);
-            }
-        }
-
-        function handleMarkerClick(list) {
-            const shop = list[0];
-            if(currentThemeMode) {
-                const ref = doc(db, "shops", shop.id);
-                const isAdded = shop.isTagged;
-                if(isAdded) updateDoc(ref, { themes: arrayRemove(currentThemeMode) }).then(()=>showToast("➖ 제거됨"));
-                else updateDoc(ref, { themes: arrayUnion(currentThemeMode) }).then(()=>showToast("➕ 추가됨"));
-            } else { window.openEditModal(shop); }
-        }
-
-        window.showSelectModal = function(list, isThemeMode) { 
-            const container = document.getElementById('selectList'); container.innerHTML = ''; 
-            list.forEach(shop => { 
-                const div = document.createElement('div'); div.className = 'shop-select-item'; 
-                div.innerHTML = `<div class="shop-select-info"><span class="shop-select-name">${shop.name}</span></div>`; 
-                div.onclick = () => { closeSelectModal(); if(isThemeMode) toggleShopTheme(shop); else openEditModal(shop); }; 
-                container.appendChild(div); 
-            }); 
-            $('#selectModal').addClass('show'); 
-        }
-
-        window.applyAdminFilters = function() { renderMarkers(allShopsData); }
-        function showToast(msg) { const t=document.getElementById('toast'); t.innerText=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+        window.deleteCurrentShop = async function() { var id = $('#shopId').val(); if(!id) return; if(confirm("삭제?")) { try{ await deleteDoc(doc(db,"shops",id)); alert("삭제됨"); closeModal(); }catch(e){alert("실패");} } }
+        window.toggleThemeMode = function() { currentThemeMode = $('#adminThemeSelect').val(); document.getElementById('themeModeStatus').style.display = currentThemeMode ? 'block' : 'none'; applyAdminFilters(); }
         
-        // 지도 빈곳 클릭 시 추가 모달 (테마모드 아닐 때만)
-        naver.maps.Event.addListener(map, 'click', function(e) { 
-            if(currentThemeMode) return; 
-            window.openAddModal();
-            $('#shopLat').val(e.coord.lat()); $('#shopLng').val(e.coord.lng()); 
-        });
+        // 🔥 [이름 변경 기능 강화] 테마 이름 변경 시 업체 정보도 자동 수정
+        window.renameTheme = async function() { 
+            const oldName = $('#adminThemeSelect').val(); 
+            if(!oldName) return alert("변경할 테마를 선택해주세요.");
+            const newName = prompt(`[${oldName}]의 새로운 이름을 입력하세요:`, oldName);
+            if(!newName || newName === oldName) return;
+            if(themeList.includes(newName)) return alert("이미 존재하는 테마 이름입니다.");
+            
+            if(!confirm(`정말 '${oldName}' -> '${newName}'(으)로 변경하시겠습니까?\n해당 테마가 적용된 모든 업체의 정보도 함께 수정됩니다.`)) return;
 
+            try {
+                // 1. 메타 데이터 수정
+                themeList = themeList.map(t => t === oldName ? newName : t);
+                themeList.sort();
+                await setDoc(doc(db, "meta", "themes"), { list: themeList });
+
+                // 2. 해당 테마를 가진 업체들 찾아서 수정 (배치 처리)
+                const q = query(collection(db, "shops"), where("themes", "array-contains", oldName));
+                const querySnapshot = await getDocs(q);
+                const batch = writeBatch(db);
+                let count = 0;
+
+                querySnapshot.forEach((docSnap) => {
+                    const shopRef = doc(db, "shops", docSnap.id);
+                    let currentThemes = docSnap.data().themes || [];
+                    let newThemes = currentThemes.map(t => t === oldName ? newName : t);
+                    batch.update(shopRef, { themes: newThemes });
+                    count++;
+                });
+
+                await batch.commit();
+                alert(`✅ 변경 완료!\n총 ${count}개 업체의 테마 정보가 갱신되었습니다.`);
+                loadThemes(); 
+                toggleThemeMode(); 
+            } catch(e) { alert("오류: " + e.message); }
+        }
+
+        window.addNewTheme = async function() { const name = prompt("새로운 테마 이름:"); if(!name) return; if(themeList.includes(name)) return alert("이미 있는 이름"); themeList.push(name); themeList.sort(); try { await setDoc(doc(db, "meta", "themes"), { list: themeList }, { merge: true }); alert("추가됨"); loadThemes(); } catch(e) { alert("실패: "+e.message); } }
+        window.deleteTheme = async function() { const t = $('#adminThemeSelect').val(); if(!t) return alert("선택필요"); if(!confirm("삭제?")) return; try { await updateDoc(doc(db, "meta", "themes"), { list: arrayRemove(t) }); alert("삭제됨"); loadThemes(); toggleThemeMode(); } catch(e) { alert("실패: "+e.message); } }
+        window.processBulkData = async function() { const raw = $('#bulkDataInput').val(); const theme = $('#bulkThemeName').val().trim(); const cat = $('#bulkCategory').val().trim(); const purp = $('#bulkPurpose').val().trim(); if(!raw || !theme || !cat) return alert("필수값 누락"); const themeRef = doc(db, "meta", "themes"); try { await updateDoc(themeRef, { list: arrayUnion(theme) }); } catch(e) { await setDoc(themeRef, { list: [theme] }); } let list; try { list = JSON.parse(raw); } catch(e) { return alert("JSON 오류"); } const status = document.getElementById('bulkStatus'); status.innerHTML = "🚀 시작..."; let count = 0; for(let item of list) { status.innerHTML += `<br>.. ${item.name}`; let lat=0, lng=0; if(item.address) { await new Promise(r => naver.maps.Service.geocode({query: item.address}, (s, res) => { if(res.v2.addresses[0]) { lat = parseFloat(res.v2.addresses[0].y); lng = parseFloat(res.v2.addresses[0].x); } r(); })); } await addDoc(collection(db, "shops"), { name: item.name, address: item.address, desc: item.desc || "", category: [cat], purpose: [purp], region: item.region || "대구", themes: [theme], lat: lat, lng: lng, createdAt: new Date(), updatedAt: new Date(), parking: "정보 없음", totalScore: 5.0, isHot: false, priority: 0 }); count++; await new Promise(r => setTimeout(r, 100)); } alert(`${count}건 완료!`); location.reload(); }
+        window.deleteAllEventData = async function() { const cat = $('#bulkCategory').val().trim(); if(!cat) return alert("입력필요"); if(!confirm("삭제?")) return; const q = query(collection(db, "shops"), where("category", "array-contains", cat)); const snaps = await getDocs(q); const batch = writeBatch(db); snaps.forEach(d => batch.delete(d.ref)); await batch.commit(); alert("완료"); location.reload(); }
+        function showToast(msg) { const t=document.getElementById('toast'); t.innerText=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+        naver.maps.Event.addListener(map, 'click', function(e) { if(currentThemeMode) return; window.openAddModal(); $('#shopLat').val(e.coord.lat()); $('#shopLng').val(e.coord.lng()); });
     </script>
 </body>
 </html>
